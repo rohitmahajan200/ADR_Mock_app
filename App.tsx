@@ -1,45 +1,38 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import React from 'react';
+import { FormProvider } from './src/contexts/FormContext';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import PatientInfoScreen from './src/screens/PatientInfoScreen';
+import ReactionDetailsScreen from './src/screens/ReactionDetailsScreen';
+import MedicationDetailsScreen from './src/screens/MedicationDetailsScreen';
+import AMCUseOnlyScreen from './src/screens/AMCUseOnlyScreen';
+import ReporterDetailsScreen from './src/screens/ReporterDetailsScreen';
+import PreviewSubmitScreen from './src/screens/PreviewSubmitScreen'
+import MedicineScreen from './src/screens/MedicineScreen';
+const Stack = createNativeStackNavigator();
 
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
-
-function App() {
-  const isDarkMode = useColorScheme() === 'dark';
-
+export default function App() {
   return (
-    <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
-    </SafeAreaProvider>
+      <FormProvider>
+        <NavigationContainer>
+          <Stack.Navigator
+            initialRouteName="PatientInfo"
+            screenOptions={{
+              contentStyle: { backgroundColor: "transparent" }, // ensures transparency
+            }}
+          >
+            <Stack.Screen name="PatientInfo" component={PatientInfoScreen} />
+            <Stack.Screen name="ReactionDetails" component={ReactionDetailsScreen} />
+            <Stack.Screen name="MedicationDetails" component={MedicationDetailsScreen} />
+            <Stack.Screen name="AMCUseOnly" component={AMCUseOnlyScreen} />
+            <Stack.Screen name="ReporterDetails" component={ReporterDetailsScreen} />
+            <Stack.Screen name="PreviewSubmit" component={PreviewSubmitScreen} />
+            <Stack.Screen name="MedicineScreen" component={MedicineScreen} />
+            
+          </Stack.Navigator>
+        </NavigationContainer>
+      </FormProvider>
   );
 }
 
-function AppContent() {
-  const safeAreaInsets = useSafeAreaInsets();
 
-  return (
-    <View style={styles.container}>
-      <NewAppScreen
-        templateFileName="App.tsx"
-        safeAreaInsets={safeAreaInsets}
-      />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
-
-export default App;
