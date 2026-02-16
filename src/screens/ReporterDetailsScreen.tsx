@@ -38,7 +38,7 @@ export default function ReporterDetailsScreen({ navigation }: any) {
         <View style={styles.card}>
 
           {/* Name & Address */}
-          <Text style={styles.label}>16. Name & Address :</Text>
+          <Text style={styles.label}>16. Name :</Text>
 
           <TextInput
             style={styles.input}
@@ -47,15 +47,7 @@ export default function ReporterDetailsScreen({ navigation }: any) {
             onChangeText={(v) => updateField("reporterNameAddress", v)}
           />
 
-          <TextInput
-            style={[styles.input, { height: 80 }]}
-            placeholder="Full Address"
-            multiline
-            value={form.reporterNameAddress}
-            onChangeText={(v) => updateField("reporterNameAddress", v)}
-          />
-
-          {/* PIN + EMAIL */}
+          {/* PIN */}
           <View style={styles.row}>
             <View style={{ flex: 1 }}>
               <Text style={styles.labelSmall}>Pin :</Text>
@@ -79,15 +71,6 @@ export default function ReporterDetailsScreen({ navigation }: any) {
             </View>
           </View>
 
-          {/* Contact */}
-          <Text style={styles.labelSmall}>Contact No. :</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Contact Number"
-            keyboardType="phone-pad"
-            value={form.reporterContact}
-            onChangeText={(v) => updateField("reporterContact", v)}
-          />
 
           {/* Occupation + Signature */}
           <View style={styles.row}>
@@ -101,15 +84,6 @@ export default function ReporterDetailsScreen({ navigation }: any) {
               />
             </View>
 
-            <View style={{ flex: 1, marginLeft: 10 }}>
-              <Text style={styles.labelSmall}>Signature :</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Signature"
-                value={form.signature ?? ""}
-                onChangeText={(v) => updateField("signature", v)}
-              />
-            </View>
           </View>
 
           {/* Date of Report */}
