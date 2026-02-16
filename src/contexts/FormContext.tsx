@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState } from 'react';
 
 type FormData = {
   // Case Type (mutually exclusive)
-  caseType?: "Initial" | "Follow-up";
+  caseType?: "Initial" | "Follow-Up";
 
   // Section A: Patient Information
   patientInitials: string;
@@ -147,7 +147,7 @@ type FormData = {
 
 
 const defaultFormData: FormData = {
-  caseType: undefined,
+  caseType: "Initial",
   patientInitials: '',
   patientAgeOrDob: '',
   gender: undefined,

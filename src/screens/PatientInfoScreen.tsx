@@ -24,37 +24,40 @@ export default function PatientInfoScreen({ navigation }: any) {
     // navigation.navigate("MedicineScreen");
   };
 
+  const caseType: { label: string; value: "Initial" | "Follow-Up" }[] = [
+  { label: "Initial", value: "Initial" },
+  { label: "Follow-Up", value: "Follow-Up" },
+];
+
+  const genders: { label: string; value: "M" | "F" | "Other" }[] = [
+  { label: "Male", value: "M" },
+  { label: "Female", value: "F" },
+  { label: "Other", value: "Other" },
+];
+
+
   return (
     <BackgroundWrapper>
       <View style={styles.container}>
-
-        {/* Initial Case */}
-        <View style={styles.checkboxContainer}>
-          <Checkbox
-            value={form.caseType === "Initial"}
-            onValueChange={(value) =>
-              setForm((f) => ({
-                ...f,
-                caseType: value ? "Initial" : undefined,
-              }))
-            }
-          />
-          <Text style={styles.checkboxLabel}>Initial Case</Text>
-        </View>
-
-        {/* Follow-up Case */}
-        <View style={styles.checkboxContainer}>
-          <Checkbox
-            value={form.caseType === "Follow-up"}
-            onValueChange={(value) =>
-              setForm((f) => ({
-                ...f,
-                caseType: value ? "Follow-up" : undefined,
-              }))
-            }
-          />
-          <Text style={styles.checkboxLabel}>Follow-up Case</Text>
-        </View>
+       {caseType.map((g) => (
+  <Pressable
+    key={g.value}
+    style={styles.checkboxContainer}
+    onPress={() => {
+      // Radio button behavior: always set the selected value when clicked
+      setForm((f) => ({ ...f, caseType: g.value }));
+    }}
+  >
+    <View pointerEvents="none">
+      <Checkbox
+        value={form.caseType === g.value}
+        onValueChange={() => {}}
+      />
+    </View>
+    <Text style={styles.checkboxLabel}>{g.label}</Text>
+  </Pressable>
+))}
+        
 
         {/* Patient Initials */}
         <Text style={styles.label}>Patient Name Initials</Text>
@@ -85,25 +88,17 @@ export default function PatientInfoScreen({ navigation }: any) {
           keyboardType="numeric"
         />
 
-        {/* Gender */}
-        <Text style={styles.label}>Gender</Text>
-        <View style={styles.genderContainer}>
-          {[
-            { label: "Male", value: "M" },
-            { label: "Female", value: "F" },
-            { label: "Other", value: "Other" },
-          ].map((g) => (
-            <View style={styles.checkboxContainer} key={g.value}>
-              <Checkbox
-                value={form.gender === g.value}
-                onValueChange={() =>
-                  setForm((f) => ({ ...f, gender: g.value }))
-                }
-              />
-              <Text style={styles.checkboxLabel}>{g.label}</Text>
-            </View>
-          ))}
-        </View>
+            {genders.map((g) => (
+  <View style={styles.checkboxContainer} key={g.value}>
+    <Checkbox
+      value={form.gender === g.value}
+      onValueChange={() =>
+        setForm((f) => ({ ...f, gender: g.value }))
+      }
+    />
+    <Text style={styles.checkboxLabel}>{g.label}</Text>
+  </View>
+))}
 
         <Pressable style={styles.button} onPress={handleNext}>
           <Text style={styles.buttonText}>Next</Text>

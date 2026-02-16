@@ -7,13 +7,15 @@ import {
   Pressable,
   ActivityIndicator,
   Alert,
+  Platform,
+  Linking,
+  Share,
 } from "react-native";
 import { useForm } from "../contexts/FormContext";
 import { useNavigation } from "@react-navigation/native";
 
 import RNFS from "react-native-fs";
 import Mailer from "react-native-mail";
-import { Buffer } from "buffer";
 
 export default function PreviewSubmitScreen() {
   const { form } = useForm();
@@ -21,8 +23,6 @@ export default function PreviewSubmitScreen() {
 
   const [loading, setLoading] = useState(false);
   const [pdfUri, setPdfUri] = useState(null);
-
-  const serverUrl = "http://localhost:4000/fill-form";
 
   const renderRow = (label, value) => {
     if (!value) return null;
@@ -35,41 +35,64 @@ export default function PreviewSubmitScreen() {
   };
 
   // -----------------------------
-  // Generate PDF + Save Locally
+  // Copy bundled PDF from app assets into a readable location and open it
   // -----------------------------
   const generatePdf = async () => {
     try {
       setLoading(true);
 
-      const res = await fetch(serverUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/pdf",
-        },
-        body: JSON.stringify(form),
-      });
+      // Destination inside app's documents directory
+      const destPath = `${RNFS.DocumentDirectoryPath}/adverse-event-report.pdf`;
 
-      if (!res.ok) {
-        throw new Error(`Server error ${res.status}`);
+      if (Platform.OS === "android") {
+        // Android: copy from android/app/src/main/assets/updated_adr_form.pdf
+        await RNFS.copyFileAssets("updated_adr_form.pdf", destPath);
+      } else {
+        // iOS: ensure the PDF is added to the app bundle resources
+        await RNFS.copyFile(
+          `${RNFS.MainBundlePath}/Updated ADR Form (1).pdf`,
+          destPath
+        );
       }
 
-      const arrayBuffer = await res.arrayBuffer();
-      const base64 = Buffer.from(arrayBuffer).toString("base64");
-
-      const filePath =
-        RNFS.DocumentDirectoryPath +
-        `/adverse-event-report-${Date.now()}.pdf`;
-
-      await RNFS.writeFile(filePath, base64, "base64");
-
-      const fileUri = `file://${filePath}`;
+      const fileUri = `file://${destPath}`;
       setPdfUri(fileUri);
 
-      Alert.alert("Success", "PDF saved to device.");
+      // Open/share the PDF file
+      try {
+        if (Platform.OS === "android") {
+          // For Android, use Share API to open PDF viewer
+          await Share.share({
+            url: fileUri,
+            title: "ADR Form PDF",
+          });
+          Alert.alert("Success", "PDF generated. Choose an app to open it.");
+        } else {
+          // For iOS, try to open directly
+          const canOpen = await Linking.canOpenURL(fileUri);
+          if (canOpen) {
+            await Linking.openURL(fileUri);
+            Alert.alert("Success", "PDF generated and opened successfully.");
+          } else {
+            // Fallback to Share API
+            await Share.share({
+              url: fileUri,
+              title: "ADR Form PDF",
+            });
+            Alert.alert("Success", "PDF generated. Choose an app to open it.");
+          }
+        }
+      } catch (openError) {
+        console.log("Open PDF Error:", openError);
+        // If opening fails, at least show success message with file path
+        Alert.alert(
+          "Success", 
+          "PDF generated and saved to device.\n\nPath: " + destPath + "\n\nYou can find it in your device's file manager."
+        );
+      }
     } catch (err) {
       console.log("PDF Error:", err);
-      Alert.alert("Error", err.message);
+      Alert.alert("Error", "Failed to generate PDF. " + err.message);
     } finally {
       setLoading(false);
     }

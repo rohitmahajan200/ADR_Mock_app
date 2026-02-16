@@ -10,6 +10,7 @@ import {
   Modal,
   StyleSheet,
 } from 'react-native';
+import BackgroundWrapper from '../components/BackgroundWrapper';
 import { getMockSideEffects, SideEffect } from '../utils/mockAI'
 
 type Props = {
@@ -37,79 +38,81 @@ const MedicineScreen: React.FC<Props> = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>Medicine name</Text>
-      <TextInput
-        style={styles.input}
-        value={medicine}
-        onChangeText={setMedicine}
-        placeholder="Enter medicine, e.g. paracetamol"
-      />
+    <BackgroundWrapper>
+      <View style={styles.container}>
+        <Text style={styles.label}>Medicine name</Text>
+        <TextInput
+          style={styles.input}
+          value={medicine}
+          onChangeText={setMedicine}
+          placeholder="Enter medicine, e.g. paracetamol"
+        />
 
-      <TouchableOpacity style={styles.button} onPress={handleSearch}>
-        <Text style={styles.buttonText}>Check side effects (Mock)</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={handleSearch}>
+          <Text style={styles.buttonText}>Check side effects (Mock)</Text>
+        </TouchableOpacity>
 
-      {sideEffects.length > 0 && (
-        <View style={styles.dropdown}>
-          <Text style={styles.dropdownTitle}>Possible side effects (mock):</Text>
-          <FlatList
-            data={sideEffects}
-            keyExtractor={item => item.id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.dropdownItem}
-                onPress={() => handleSelectSideEffect(item)}
-              >
-                <Text style={styles.dropdownText}>{item.label}</Text>
-              </TouchableOpacity>
-            )}
-          />
-        </View>
-      )}
-
-      <Modal
-        visible={showWarning}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowWarning(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>
-              {selectedSideEffect?.warningTitle ?? 'Condition warning'}
-            </Text>
-            <Text style={styles.modalMessage}>
-              {selectedSideEffect?.warningMessage ??
-                'This is only a prototype and not real medical advice.'}
-            </Text>
-
-            {/* Example “conditions” */}
-            <View style={styles.conditionsBox}>
-              <Text style={styles.conditionsTitle}>Mock conditions:</Text>
-              <Text>- Pregnancy related restriction (prototype).</Text>
-              <Text>- Age based caution (children / seniors) (prototype).</Text>
-              <Text>- Renal / liver caution (prototype).</Text>
-              <Text>- Allergy or hypersensitivity note (prototype).</Text>
-            </View>
-
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => setShowWarning(false)}
-            >
-              <Text style={styles.buttonText}>OK, understood</Text>
-            </TouchableOpacity>
+        {sideEffects.length > 0 && (
+          <View style={styles.dropdown}>
+            <Text style={styles.dropdownTitle}>Possible side effects (mock):</Text>
+            <FlatList
+              data={sideEffects}
+              keyExtractor={item => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.dropdownItem}
+                  onPress={() => handleSelectSideEffect(item)}
+                >
+                  <Text style={styles.dropdownText}>{item.label}</Text>
+                </TouchableOpacity>
+              )}
+            />
           </View>
-        </View>
-      </Modal>
-    </View>
+        )}
+
+        <Modal
+          visible={showWarning}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowWarning(false)}
+        >
+          <View style={styles.modalBackdrop}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>
+                {selectedSideEffect?.warningTitle ?? 'Condition warning'}
+              </Text>
+              <Text style={styles.modalMessage}>
+                {selectedSideEffect?.warningMessage ??
+                  'This is only a prototype and not real medical advice.'}
+              </Text>
+
+              {/* Example “conditions” */}
+              <View style={styles.conditionsBox}>
+                <Text style={styles.conditionsTitle}>Mock conditions:</Text>
+                <Text>- Pregnancy related restriction (prototype).</Text>
+                <Text>- Age based caution (children / seniors) (prototype).</Text>
+                <Text>- Renal / liver caution (prototype).</Text>
+                <Text>- Allergy or hypersensitivity note (prototype).</Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.button}
+                onPress={() => setShowWarning(false)}
+              >
+                <Text style={styles.buttonText}>OK, understood</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      </View>
+    </BackgroundWrapper>
   );
 };
 
 export default MedicineScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: '#fff' },
+  container: { flex: 1, padding: 16, backgroundColor: 'transparent' },
   label: { fontSize: 16, fontWeight: '600', marginBottom: 8 },
   input: {
     borderWidth: 1,
