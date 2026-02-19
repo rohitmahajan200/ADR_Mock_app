@@ -10,7 +10,7 @@ export async function downloadPdf(formData) {
     responseType: "arraybuffer",
   });
 
-  const pdfPath = `${RNFS.DownloadDirectoryPath}/report.pdf`;
+  const pdfPath = `${RNFS.DownloadDirectoryPath}/ADR_Form.pdf`;
 
   await RNFS.writeFile(pdfPath, Buffer.from(response.data), "base64");
 
