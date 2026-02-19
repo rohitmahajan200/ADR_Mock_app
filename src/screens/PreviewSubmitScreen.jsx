@@ -98,41 +98,33 @@ Please rebuild the app to ensure the PDF asset is bundled correctly.`;
       
       console.log(`PDF copied successfully. Size: ${fileSize} bytes`);
 
-      const fileUri = `file://${destPath}`;
+      // For Android, copy to Downloads folder so it's publicly accessible
+      let publicPath = destPath;
+      let downloadsPath = null;
+      if (Platform.OS === "android") {
+        downloadsPath = `${RNFS.DownloadDirectoryPath}/ADR_Report_${Date.now()}.pdf`;
+        await RNFS.copyFile(destPath, downloadsPath);
+        publicPath = downloadsPath;
+        console.log(`PDF also copied to Downloads: ${downloadsPath}`);
+      }
+
+      const fileUri = `file://${publicPath}`;
       setPdfUri(fileUri);
 
-      // Open/share the PDF file
-      try {
-        if (Platform.OS === "android") {
-          // For Android, use Share API to open PDF viewer
-          await Share.share({
-            url: fileUri,
-            title: "ADR Form PDF",
-          });
-          Alert.alert("Success", "PDF generated. Choose an app to open it.");
-        } else {
-          // For iOS, try to open directly
-          const canOpen = await Linking.canOpenURL(fileUri);
-          if (canOpen) {
-            await Linking.openURL(fileUri);
-            Alert.alert("Success", "PDF generated and opened successfully.");
-          } else {
-            // Fallback to Share API
-            await Share.share({
-              url: fileUri,
-              title: "ADR Form PDF",
-            });
-            Alert.alert("Success", "PDF generated. Choose an app to open it.");
-          }
-        }
-      } catch (openError) {
-        console.log("Open PDF Error:", openError);
-        // If opening fails, at least show success message with file path
-        Alert.alert(
-          "Success", 
-          "PDF generated and saved to device.\n\nPath: " + destPath + "\n\nYou can find it in your device's file manager."
-        );
-      }
+      // Show success message - user can manually open from Downloads
+      Alert.alert(
+        "PDF Generated Successfully! ✅",
+        `PDF has been saved successfully.\n\n` +
+        `📄 Size: ${(fileSize / 1024).toFixed(1)} KB\n\n` +
+        (Platform.OS === "android" 
+          ? `📁 Location: Downloads folder\n\n` +
+            `You can find it as:\nADR_Report_*.pdf\n\n` +
+            `Open it using any PDF viewer or file manager app.`
+          : `📁 Location: ${destPath}\n\n` +
+            `You can find it in your device's file manager.`
+        ),
+        [{ text: "OK" }]
+      );
     } catch (err) {
       console.log("PDF Error:", err);
       Alert.alert("Error", "Failed to generate PDF. " + err.message);
