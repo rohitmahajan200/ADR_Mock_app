@@ -45,15 +45,58 @@ export default function PreviewSubmitScreen() {
       const destPath = `${RNFS.DocumentDirectoryPath}/adverse-event-report.pdf`;
 
       if (Platform.OS === "android") {
-        // Android: copy from android/app/src/main/assets/updated_adr_form.pdf
-        await RNFS.copyFileAssets("updated_adr_form.pdf", destPath);
+        // Android: try adr_form.pdf first, fallback to updated_adr_form.pdf
+        let copied = false;
+        const assetFiles = ["adr_form.pdf", "updated_adr_form.pdf"];
+        
+        for (const assetFile of assetFiles) {
+          try {
+            await RNFS.copyFileAssets(assetFile, destPath);
+            console.log(`PDF asset copied from ${assetFile}`);
+            copied = true;
+            break;
+          } catch (copyError) {
+            console.log(`Failed to copy ${assetFile}:`, copyError.message);
+            // Try next file
+          }
+        }
+        
+        if (!copied) {
+          throw new Error(
+            `Failed to copy PDF from assets. Tried: ${assetFiles.join(", ")}. ` +
+            `Make sure a PDF exists in android/app/src/main/assets/ and rebuild the app.`
+          );
+        }
       } else {
-        // iOS: ensure the PDF is added to the app bundle resources
-        await RNFS.copyFile(
-          `${RNFS.MainBundlePath}/Updated ADR Form (1).pdf`,
-          destPath
-        );
+        // iOS: ensure ADR_Form.pdf is added to the app bundle resources
+        try {
+          await RNFS.copyFile(
+            `${RNFS.MainBundlePath}/ADR_Form.pdf`,
+            destPath
+          );
+        } catch (copyError) {
+          throw new Error(
+            `Failed to copy PDF from bundle: ${copyError.message}`
+          );
+        }
       }
+
+      // Sanity check: copied file should not be empty
+      const stat = await RNFS.stat(destPath);
+      const fileSize = stat?.size ? Number(stat.size) : 0;
+      
+      if (!stat || fileSize < 1000) {
+        const errorMsg = `PDF copy failed or file is too small. 
+Size: ${fileSize} bytes
+Expected: > 1000 bytes
+Source asset: adr_form.pdf
+Destination: ${destPath}
+
+Please rebuild the app to ensure the PDF asset is bundled correctly.`;
+        throw new Error(errorMsg);
+      }
+      
+      console.log(`PDF copied successfully. Size: ${fileSize} bytes`);
 
       const fileUri = `file://${destPath}`;
       setPdfUri(fileUri);

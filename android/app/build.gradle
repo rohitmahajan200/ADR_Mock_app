@@ -107,6 +107,19 @@ android {
     }
 }
 
+// Ensure the bundled ADR PDF exists in Android app assets.
+// Source of truth is kept in the JS repo at: /src/assets/ADR_Form.pdf
+def adrPdfSrc = file("$rootDir/../src/assets/ADR_Form.pdf")
+def adrPdfDestDir = file("$projectDir/src/main/assets")
+
+tasks.register("copyAdrPdfToAssets", Copy) {
+    from(adrPdfSrc)
+    into(adrPdfDestDir)
+    rename { _ -> "adr_form.pdf" }
+}
+
+preBuild.dependsOn("copyAdrPdfToAssets")
+
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
