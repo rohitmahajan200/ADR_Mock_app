@@ -1,4 +1,3 @@
-// src/screens/MedicationDetails.tsx
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -16,6 +15,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
 import BackgroundWrapper from "../components/BackgroundWrapper";
 import { useForm } from "../contexts/FormContext";
+import { getMockSideEffects, SideEffect } from "../utils/mockAI";
 
 const ACTION_OPTIONS = [
   "Drug withdrawn",
@@ -35,7 +35,17 @@ const ROUTE_OPTIONS = [
   "Subcutaneous",
   "Topical",
   "Inhalation",
+  "Sublingual",
+  "Rectal",
   "Other",
+];
+
+const CAUSALITY_OPTIONS = [
+  "Certain",
+  "Probable",
+  "Possible",
+  "Unlikely",
+  "Unclassified",
 ];
 
 type SuspectedMed = {
@@ -64,161 +74,6 @@ type ConcomitantMed = {
   dateStopped?: string;
   indication?: string;
 };
-
-/** ------- MOCK AI SIDE-EFFECTS (PROTOTYPE ONLY) ------- */
-
-type MockSideEffect = {
-  id: string;
-  label: string;
-  condition?: "pregnant" | "child" | "senior" | "renal" | "allergy";
-  warningTitle?: string;
-  warningMessage?: string;
-};
-
-// const MOCK_SIDE_EFFECTS: Record<string, MockSideEffect[]> = {
-//   paracetamol: [
-//     {
-//       id: "p1",
-//       label: "May cause liver issues in high doses.",
-//       condition: "renal",
-//       warningTitle: "Liver / renal caution (prototype)",
-//       warningMessage:
-//         "Avoid high doses in liver or kidney issues. This is dummy prototype info only, not medical advice.",
-//     },
-//     {
-//       id: "p2",
-//       label: "Generally considered safe in pregnancy (mock).",
-//       condition: "pregnant",
-//       warningTitle: "Pregnancy notice (prototype)",
-//       warningMessage:
-//         "Always consult a doctor before any medicine in pregnancy. This is just demo behaviour.",
-//     },
-//   ],
-//   ibuprofen: [
-//     {
-//       id: "i1",
-//       label: "Avoid in late pregnancy (mock).",
-//       condition: "pregnant",
-//       warningTitle: "Pregnancy restriction (prototype)",
-//       warningMessage:
-//         "Non‑steroidal drugs may be avoided in late pregnancy. This is sample text only.",
-//     },
-//     {
-//       id: "i2",
-//       label: "Not recommended for children under 12 (mock).",
-//       condition: "child",
-//       warningTitle: "Age restriction (prototype)",
-//       warningMessage:
-//         "Use pediatric dosing and doctor consultation for children. Demo only, not real guidance.",
-//     },
-//   ],
-//   amoxicillin: [
-//     {
-//       id: "a1",
-//       label: "May cause allergic reactions (mock).",
-//       condition: "allergy",
-//       warningTitle: "Allergy risk (prototype)",
-//       warningMessage:
-//         "Watch for rash or breathing difficulty and seek help. This is mock behaviour only.",
-//     },
-//   ],
-// };
-
-const MOCK_SIDE_EFFECTS: Record<string, MockSideEffect[]> = {
-  paracetamol: [
-    {
-      id: "p1",
-      label: "May cause liver issues in high doses.",
-      condition: "renal",
-      warningTitle: "Liver / renal caution",
-      warningMessage:
-        "Avoid high doses in liver or kidney issues.",
-    },
-    {
-      id: "p2",
-      label: "Generally considered safe in pregnancy.",
-      condition: "pregnant",
-      warningTitle: "Pregnancy notice",
-      warningMessage:
-        "Always consult a doctor before any medicine in pregnancy.",
-    },
-  ],
-
-  ibuprofen: [
-    {
-      id: "i1",
-      label: "Avoid in late pregnancy.",
-      condition: "pregnant",
-      warningTitle: "Pregnancy restriction",
-      warningMessage:
-        "NSAIDs may be avoided in late pregnancy.",
-    },
-    {
-      id: "i2",
-      label: "Not recommended for children under 12.",
-      condition: "child",
-      warningTitle: "Age restriction",
-      warningMessage:
-        "Use pediatric dosing and doctor consultation for children.",
-    },
-  ],
-
-  amoxicillin: [
-    {
-      id: "a1",
-      label: "May cause allergic reactions.",
-      condition: "allergy",
-      warningTitle: "Allergy risk",
-      warningMessage:
-        "Watch for rash or breathing difficulty and seek help.",
-    },
-  ],
-
-  chlorpromazine: [
-    {
-      id: "c1",
-      label: "May cause strong drowsiness.",
-      condition: "senior",
-      warningTitle: "Sedation warning",
-      warningMessage:
-        "Use cautiously in senior patients due to fall risk.",
-    },
-    {
-      id: "c2",
-      label: "May cause allergic reactions in some patients.",
-      condition: "allergy",
-      warningTitle: "Allergy caution",
-      warningMessage:
-        "Monitor for rash or swelling.",
-    },
-  ],
-
-  diclofenac: [
-    {
-      id: "d1",
-      label: "May affect kidney function (mock).",
-      condition: "renal",
-      warningTitle: "Renal caution (prototype)",
-      warningMessage:
-        "NSAIDs may impact kidneys. Prototype warning only.",
-    },
-    {
-      id: "d2",
-      label: "Use cautiously in seniors due to gastric sensitivity (mock).",
-      condition: "senior",
-      warningTitle: "Senior caution (prototype)",
-      warningMessage:
-        "Monitor stomach discomfort in older patients. Demo text only.",
-    },
-  ],
-};
-
-const getMockSideEffects = (medicineName: string): MockSideEffect[] => {
-  const key = medicineName.trim().toLowerCase();
-  return MOCK_SIDE_EFFECTS[key] ?? [];
-};
-
-/** ------------- COMPONENT ------------- */
 
 export default function MedicationDetailsScreen({ navigation }: any) {
   const { form, setForm } = useForm();
@@ -271,13 +126,12 @@ export default function MedicationDetailsScreen({ navigation }: any) {
   };
 
   const [medications, setMedications] = useState<SuspectedMed[]>(
-    (form as any).medications ?? buildInitialSuspected()
+    buildInitialSuspected
   );
   const [concomitant, setConcomitant] = useState<ConcomitantMed[]>(
-    (form as any).concomitantMedications ?? buildInitialConcomitant()
+    buildInitialConcomitant
   );
 
-  // single date picker state
   const [pickerVisible, setPickerVisible] = useState(false);
   const [pickerConfig, setPickerConfig] = useState<{
     section: "suspected" | "concomitant";
@@ -291,75 +145,86 @@ export default function MedicationDetailsScreen({ navigation }: any) {
       d.getMonth() + 1
     ).padStart(2, "0")}/${d.getFullYear()}`;
 
-  const [aiSideEffects, setAiSideEffects] = useState<MockSideEffect[]>([]);
-  const [aiWarning, setAiWarning] = useState<MockSideEffect | null>(null);
+  // Side-effect helper state, per row.
+  const [aiResults, setAiResults] = useState<{
+    medIdx: number;
+    items: SideEffect[];
+  } | null>(null);
+  const [warning, setWarning] = useState<SideEffect | null>(null);
 
   const handleAiCheck = (idx: number) => {
     const med = medications[idx];
     if (!med?.name?.trim()) {
-      Alert.alert("Enter medicine name", "Please type medicine name first.");
+      Alert.alert(
+        "Enter a medicine name first",
+        "Type the medicine name in the Name field, then tap “Check side effects”."
+      );
       return;
     }
     const results = getMockSideEffects(med.name);
-    setAiSideEffects(results);
     if (results.length === 0) {
       Alert.alert(
-        "No sample data",
-        "No mock side‑effects configured for this medicine in prototype."
+        "No suggestions found",
+        `No reference data is available for “${med.name}”. Try a generic name (e.g. paracetamol, amoxicillin, warfarin).`
       );
+      setAiResults(null);
+      return;
     }
+    setAiResults({ medIdx: idx, items: results });
   };
 
-  const handleSelectSideEffect = (idx: number, eff: MockSideEffect) => {
+  const handleSelectSideEffect = (idx: number, eff: SideEffect) => {
     const current = medications[idx];
     const mergedIndication = current.indication
       ? `${current.indication}\n${eff.label}`
       : eff.label;
     updateSuspected(idx, "indication", mergedIndication);
-    setAiWarning(eff);
+    if (eff.warningTitle || eff.warningMessage) {
+      setWarning(eff);
+    }
   };
 
+  // Sync suspected medication state into form.
   useEffect(() => {
-    setForm((prev: any) => ({ ...prev, medications }));
-    const fixedUpdate: any = {};
-    for (let i = 1; i <= 4; i++) {
-      const med = medications[i - 1] || ({} as SuspectedMed);
-      fixedUpdate[`suspectedMedicationName${i}`] = med.name ?? "";
-      fixedUpdate[`suspectedMedicationManufacturer${i}`] =
-        med.manufacturer ?? "";
-      fixedUpdate[`suspectedMedicationBatch${i}`] = med.batch ?? "";
-      fixedUpdate[`suspectedMedicationExpiry${i}`] = med.expiry ?? "";
-      fixedUpdate[`suspectedMedicationDose${i}`] = med.dose ?? "";
-      fixedUpdate[`suspectedMedicationRoute${i}`] = med.route ?? "";
-      fixedUpdate[`suspectedMedicationFrequency${i}`] = med.frequency ?? "";
-      fixedUpdate[`suspectedMedicationDateStarted${i}`] =
-        med.dateStarted ?? "";
-      fixedUpdate[`suspectedMedicationDateStopped${i}`] =
-        med.dateStopped ?? "";
-      fixedUpdate[`suspectedMedicationIndication${i}`] =
-        med.indication ?? "";
-      fixedUpdate[`suspectedMedicationCausality${i}`] = med.causality ?? "";
-      fixedUpdate[`actionTaken${i}`] = med.actionTaken ?? "";
-      fixedUpdate[`reintroducedEffect${i}`] = med.reintroducedEffect ?? "";
-      fixedUpdate[`reintroducedDose${i}`] = med.reintroducedDose ?? "";
-    }
-    setForm((prev: any) => ({ ...prev, ...fixedUpdate }));
+    setForm((prev: any) => {
+      const next = { ...prev };
+      for (let i = 1; i <= 4; i++) {
+        const med = medications[i - 1] || ({} as SuspectedMed);
+        next[`suspectedMedicationName${i}`] = med.name ?? "";
+        next[`suspectedMedicationManufacturer${i}`] = med.manufacturer ?? "";
+        next[`suspectedMedicationBatch${i}`] = med.batch ?? "";
+        next[`suspectedMedicationExpiry${i}`] = med.expiry ?? "";
+        next[`suspectedMedicationDose${i}`] = med.dose ?? "";
+        next[`suspectedMedicationRoute${i}`] = med.route ?? "";
+        next[`suspectedMedicationFrequency${i}`] = med.frequency ?? "";
+        next[`suspectedMedicationDateStarted${i}`] = med.dateStarted ?? "";
+        next[`suspectedMedicationDateStopped${i}`] = med.dateStopped ?? "";
+        next[`suspectedMedicationIndication${i}`] = med.indication ?? "";
+        next[`suspectedMedicationCausality${i}`] = med.causality ?? "";
+        next[`actionTaken${i}`] = med.actionTaken ?? "";
+        next[`reintroducedEffect${i}`] = med.reintroducedEffect ?? "";
+        next[`reintroducedDose${i}`] = med.reintroducedDose ?? "";
+      }
+      return next;
+    });
   }, [medications, setForm]);
 
+  // Sync concomitant state into form.
   useEffect(() => {
-    setForm((prev: any) => ({ ...prev, concomitantMedications: concomitant }));
-    const fixedUpdate: any = {};
-    for (let i = 1; i <= 4; i++) {
-      const c = concomitant[i - 1] || ({} as ConcomitantMed);
-      fixedUpdate[`concomitantName${i}`] = c.name ?? "";
-      fixedUpdate[`concomitantDose${i}`] = c.dose ?? "";
-      fixedUpdate[`concomitantRoute${i}`] = c.route ?? "";
-      fixedUpdate[`concomitantFrequency${i}`] = c.frequency ?? "";
-      fixedUpdate[`concomitantDateStarted${i}`] = c.dateStarted ?? "";
-      fixedUpdate[`concomitantDateStopped${i}`] = c.dateStopped ?? "";
-      fixedUpdate[`concomitantIndication${i}`] = c.indication ?? "";
-    }
-    setForm((prev: any) => ({ ...prev, ...fixedUpdate }));
+    setForm((prev: any) => {
+      const next = { ...prev };
+      for (let i = 1; i <= 4; i++) {
+        const c = concomitant[i - 1] || ({} as ConcomitantMed);
+        next[`concomitantName${i}`] = c.name ?? "";
+        next[`concomitantDose${i}`] = c.dose ?? "";
+        next[`concomitantRoute${i}`] = c.route ?? "";
+        next[`concomitantFrequency${i}`] = c.frequency ?? "";
+        next[`concomitantDateStarted${i}`] = c.dateStarted ?? "";
+        next[`concomitantDateStopped${i}`] = c.dateStopped ?? "";
+        next[`concomitantIndication${i}`] = c.indication ?? "";
+      }
+      return next;
+    });
   }, [concomitant, setForm]);
 
   const updateSuspected = (
@@ -367,9 +232,11 @@ export default function MedicationDetailsScreen({ navigation }: any) {
     key: keyof SuspectedMed,
     value: any
   ) => {
-    const copy = [...medications];
-    copy[index] = { ...(copy[index] || {}), [key]: value };
-    setMedications(copy);
+    setMedications((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...(copy[index] || {}), [key]: value };
+      return copy;
+    });
   };
 
   const updateConcomitant = (
@@ -377,77 +244,55 @@ export default function MedicationDetailsScreen({ navigation }: any) {
     key: keyof ConcomitantMed,
     value: any
   ) => {
-    const copy = [...concomitant];
-    copy[index] = { ...(copy[index] || {}), [key]: value };
-    setConcomitant(copy);
+    setConcomitant((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...(copy[index] || {}), [key]: value };
+      return copy;
+    });
   };
 
   const addMedication = () => {
-    setMedications((prev) => [
-      ...prev,
-      {
-        name: "",
-        manufacturer: "",
-        batch: "",
-        expiry: "",
-        dose: "",
-        route: "",
-        frequency: "",
-        dateStarted: "",
-        dateStopped: "",
-        indication: "",
-        causality: "",
-        actionTaken: "",
-        reintroducedEffect: "",
-        reintroducedDose: "",
-      },
-    ]);
+    if (medications.length >= 4) {
+      Alert.alert(
+        "Limit reached",
+        "The form supports up to 4 suspected medications. Use the Additional Information section for more."
+      );
+      return;
+    }
+    setMedications((prev) => [...prev, {} as SuspectedMed]);
   };
 
   const removeMedication = (index: number) => {
     if (medications.length === 1) {
-      Alert.alert("At least one row must exist");
+      Alert.alert("At least one medication row is required.");
       return;
     }
-    const copy = medications.filter((_, i) => i !== index);
-    setMedications(copy);
+    setMedications((prev) => prev.filter((_, i) => i !== index));
   };
 
   const addConcomitant = () => {
-    setConcomitant((prev) => [
-      ...prev,
-      {
-        name: "",
-        dose: "",
-        route: "",
-        frequency: "",
-        dateStarted: "",
-        dateStopped: "",
-        indication: "",
-      },
-    ]);
+    if (concomitant.length >= 4) {
+      Alert.alert(
+        "Limit reached",
+        "The form supports up to 4 concomitant medications."
+      );
+      return;
+    }
+    setConcomitant((prev) => [...prev, {} as ConcomitantMed]);
   };
 
   const removeConcomitant = (index: number) => {
     if (concomitant.length === 1) {
-      Alert.alert("At least one row must exist");
+      Alert.alert("At least one concomitant row is required.");
       return;
     }
     setConcomitant((prev) => prev.filter((_, i) => i !== index));
   };
 
   const onDateChange = (event: any, selected?: Date) => {
-    if (Platform.OS === "android") {
-      setPickerVisible(false);
-    }
-
-    if (!pickerConfig) {
-      return;
-    }
-
-    if (event?.type === "dismissed") {
-      return;
-    }
+    if (Platform.OS === "android") setPickerVisible(false);
+    if (!pickerConfig) return;
+    if (event?.type === "dismissed") return;
 
     const chosen = selected || pickerConfig.date;
     const formatted = formatDate(chosen);
@@ -471,9 +316,7 @@ export default function MedicationDetailsScreen({ navigation }: any) {
       const d = parseInt(dd, 10);
       const m = parseInt(mm, 10) - 1;
       const y = parseInt(yyyy, 10);
-      if (!isNaN(d) && !isNaN(m) && !isNaN(y)) {
-        baseDate = new Date(y, m, d);
-      }
+      if (!isNaN(d) && !isNaN(m) && !isNaN(y)) baseDate = new Date(y, m, d);
     }
     setPickerConfig({ section, index, key, date: baseDate });
     setPickerVisible(true);
@@ -486,64 +329,74 @@ export default function MedicationDetailsScreen({ navigation }: any) {
   return (
     <BackgroundWrapper>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.header}>C. Suspected Medications</Text>
+        <Text style={styles.sectionHeader}>C. Suspected Medications</Text>
 
         {medications.map((med, idx) => (
           <View key={`med-${idx}`} style={styles.card}>
             <View style={styles.cardHeaderRow}>
               <Text style={styles.cardTitle}>Medication {idx + 1}</Text>
-              <View style={{ flexDirection: "row" }}>
+              {medications.length > 1 && (
                 <Pressable
-                  style={styles.smallBtn}
+                  style={styles.removeBtn}
                   onPress={() => removeMedication(idx)}
                 >
-                  <Text style={styles.smallBtnText}>Remove</Text>
+                  <Text style={styles.removeBtnText}>Remove</Text>
                 </Pressable>
-              </View>
+              )}
             </View>
 
-            {renderFieldLabel("Name")}
+            {renderFieldLabel("Name (Brand / Generic)")}
             <TextInput
               style={styles.input}
-              placeholder="Name"
+              placeholder="e.g. Paracetamol"
+              placeholderTextColor="#9ca0c0"
               value={med.name}
               onChangeText={(v) => updateSuspected(idx, "name", v)}
             />
 
             <Pressable
-              style={[styles.smallBtn, { alignSelf: "flex-start", marginBottom: 10 }]}
+              style={styles.helperBtn}
               onPress={() => handleAiCheck(idx)}
             >
-              <Text style={styles.smallBtnText}>Check side effects</Text>
+              <Text style={styles.helperBtnText}>
+                Check known side effects
+              </Text>
             </Pressable>
 
-            {aiSideEffects.length > 0 && (
+            {aiResults && aiResults.medIdx === idx && (
               <View style={styles.aiDropdown}>
-                <Text style={styles.aiTitle}>Sample side effects (mock):</Text>
-                {aiSideEffects.map((eff) => (
+                <Text style={styles.aiTitle}>
+                  Reference side effects for “{med.name}”
+                </Text>
+                <Text style={styles.aiHint}>
+                  Tap an item to add it to the Indication field.
+                </Text>
+                {aiResults.items.map((eff) => (
                   <Pressable
                     key={eff.id}
                     style={styles.aiItem}
                     onPress={() => handleSelectSideEffect(idx, eff)}
                   >
-                    <Text style={styles.aiText}>{eff.label}</Text>
+                    <Text style={styles.aiText}>• {eff.label}</Text>
                   </Pressable>
                 ))}
               </View>
             )}
 
-            {renderFieldLabel("Manufacturer")}
+            {renderFieldLabel("Manufacturer (if known)")}
             <TextInput
               style={styles.input}
               placeholder="Manufacturer"
+              placeholderTextColor="#9ca0c0"
               value={med.manufacturer}
               onChangeText={(v) => updateSuspected(idx, "manufacturer", v)}
             />
 
-            {renderFieldLabel("Batch / Lot")}
+            {renderFieldLabel("Batch / Lot No.")}
             <TextInput
               style={styles.input}
-              placeholder="Batch / Lot"
+              placeholder="Batch / Lot number"
+              placeholderTextColor="#9ca0c0"
               value={med.batch}
               onChangeText={(v) => updateSuspected(idx, "batch", v)}
             />
@@ -555,15 +408,16 @@ export default function MedicationDetailsScreen({ navigation }: any) {
                 openDatePicker("suspected", idx, "expiry", med.expiry)
               }
             >
-              <Text style={styles.inputText}>
-                {med.expiry || "Expiry Date"}
+              <Text style={[styles.inputText, !med.expiry && styles.placeholder]}>
+                {med.expiry || "Select expiry date"}
               </Text>
             </TouchableOpacity>
 
             {renderFieldLabel("Dose")}
             <TextInput
               style={styles.input}
-              placeholder="Dose"
+              placeholder="e.g. 500 mg"
+              placeholderTextColor="#9ca0c0"
               value={med.dose}
               onChangeText={(v) => updateSuspected(idx, "dose", v)}
             />
@@ -575,7 +429,7 @@ export default function MedicationDetailsScreen({ navigation }: any) {
                 onValueChange={(val) => updateSuspected(idx, "route", val)}
                 style={styles.picker}
               >
-                <Picker.Item label="Select Route" value="" />
+                <Picker.Item label="Select route" value="" />
                 {ROUTE_OPTIONS.map((r) => (
                   <Picker.Item key={r} label={r} value={r} />
                 ))}
@@ -585,7 +439,8 @@ export default function MedicationDetailsScreen({ navigation }: any) {
             {renderFieldLabel("Frequency")}
             <TextInput
               style={styles.input}
-              placeholder="Frequency"
+              placeholder="e.g. OD, BD, TDS"
+              placeholderTextColor="#9ca0c0"
               value={med.frequency}
               onChangeText={(v) => updateSuspected(idx, "frequency", v)}
             />
@@ -594,16 +449,16 @@ export default function MedicationDetailsScreen({ navigation }: any) {
             <TouchableOpacity
               style={styles.input}
               onPress={() =>
-                openDatePicker(
-                  "suspected",
-                  idx,
-                  "dateStarted",
-                  med.dateStarted
-                )
+                openDatePicker("suspected", idx, "dateStarted", med.dateStarted)
               }
             >
-              <Text style={styles.inputText}>
-                {med.dateStarted || "Therapy Start Date"}
+              <Text
+                style={[
+                  styles.inputText,
+                  !med.dateStarted && styles.placeholder,
+                ]}
+              >
+                {med.dateStarted || "Select start date"}
               </Text>
             </TouchableOpacity>
 
@@ -611,123 +466,135 @@ export default function MedicationDetailsScreen({ navigation }: any) {
             <TouchableOpacity
               style={styles.input}
               onPress={() =>
-                openDatePicker(
-                  "suspected",
-                  idx,
-                  "dateStopped",
-                  med.dateStopped
-                )
+                openDatePicker("suspected", idx, "dateStopped", med.dateStopped)
               }
             >
-              <Text style={styles.inputText}>
-                {med.dateStopped || "Therapy Stop Date"}
+              <Text
+                style={[
+                  styles.inputText,
+                  !med.dateStopped && styles.placeholder,
+                ]}
+              >
+                {med.dateStopped || "Select stop date"}
               </Text>
             </TouchableOpacity>
 
             {renderFieldLabel("Indication")}
             <TextInput
-              style={[styles.input, { minHeight: 60 }]}
-              placeholder="Indication"
+              style={[styles.input, styles.multiline]}
+              placeholder="Why this medicine was prescribed"
+              placeholderTextColor="#9ca0c0"
               multiline
               value={med.indication}
               onChangeText={(v) => updateSuspected(idx, "indication", v)}
             />
 
-            <Text style={styles.subHeader}>Action Taken</Text>
+            <Text style={styles.subHeader}>Action Taken after Reaction</Text>
             <View style={styles.chipContainer}>
-              {ACTION_OPTIONS.map((opt) => (
-                <Pressable
-                  key={opt}
-                  style={[
-                    styles.chip,
-                    med.actionTaken === opt && styles.chipActive,
-                  ]}
-                  onPress={() => updateSuspected(idx, "actionTaken", opt)}
-                >
-                  <Text
-                    style={[
-                      styles.chipText,
-                      med.actionTaken === opt && styles.chipTextActive,
-                    ]}
+              {ACTION_OPTIONS.map((opt) => {
+                const active = med.actionTaken === opt;
+                return (
+                  <Pressable
+                    key={opt}
+                    style={[styles.chip, active && styles.chipActive]}
+                    onPress={() => updateSuspected(idx, "actionTaken", opt)}
                   >
-                    {opt}
-                  </Text>
-                </Pressable>
-              ))}
+                    <Text
+                      style={[
+                        styles.chipText,
+                        active && styles.chipTextActive,
+                      ]}
+                    >
+                      {opt}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
 
             <Text style={styles.subHeader}>
-              Reaction reappeared after reintroduction?
+              Reaction Reappeared after Reintroduction?
             </Text>
             <View style={styles.chipContainer}>
-              {REINTRO_OPTIONS.map((opt) => (
-                <Pressable
-                  key={opt}
-                  style={[
-                    styles.chip,
-                    med.reintroducedEffect === opt && styles.chipActive,
-                  ]}
-                  onPress={() =>
-                    updateSuspected(idx, "reintroducedEffect", opt)
-                  }
-                >
-                  <Text
-                    style={[
-                      styles.chipText,
-                      med.reintroducedEffect === opt &&
-                        styles.chipTextActive,
-                    ]}
+              {REINTRO_OPTIONS.map((opt) => {
+                const active = med.reintroducedEffect === opt;
+                return (
+                  <Pressable
+                    key={opt}
+                    style={[styles.chip, active && styles.chipActive]}
+                    onPress={() =>
+                      updateSuspected(idx, "reintroducedEffect", opt)
+                    }
                   >
-                    {opt}
-                  </Text>
-                </Pressable>
-              ))}
+                    <Text
+                      style={[
+                        styles.chipText,
+                        active && styles.chipTextActive,
+                      ]}
+                    >
+                      {opt}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
 
-            {renderFieldLabel("Dose (if reintroduced)")}
+            {renderFieldLabel("Dose if Reintroduced")}
             <TextInput
               style={styles.input}
-              placeholder="Dose (if reintroduced)"
+              placeholder="Dose used at reintroduction"
+              placeholderTextColor="#9ca0c0"
               value={med.reintroducedDose}
-              onChangeText={(v) =>
-                updateSuspected(idx, "reintroducedDose", v)
-              }
+              onChangeText={(v) => updateSuspected(idx, "reintroducedDose", v)}
             />
 
-            {renderFieldLabel("Causality")}
-            <TextInput
-              style={styles.input}
-              placeholder="Causality"
-              value={med.causality}
-              onChangeText={(v) => updateSuspected(idx, "causality", v)}
-            />
+            {renderFieldLabel("Causality Assessment")}
+            <View style={styles.pickerWrapper}>
+              <Picker
+                selectedValue={med.causality}
+                onValueChange={(val) => updateSuspected(idx, "causality", val)}
+                style={styles.picker}
+              >
+                <Picker.Item label="Select causality" value="" />
+                {CAUSALITY_OPTIONS.map((c) => (
+                  <Picker.Item key={c} label={c} value={c} />
+                ))}
+              </Picker>
+            </View>
           </View>
         ))}
 
         <Pressable style={styles.addButton} onPress={addMedication}>
-          <Text style={styles.addButtonText}>+ Add More Medication</Text>
+          <Text style={styles.addButtonText}>+ Add Another Medication</Text>
         </Pressable>
 
-        <Text style={[styles.header, { marginTop: 12 }]}>
-          Concomitant medical products (self-medication, herbal remedies)
+        <Text style={[styles.sectionHeader, { marginTop: 8 }]}>
+          Concomitant Medical Products
+        </Text>
+        <Text style={styles.subnote}>
+          Self-medication, herbal remedies and recently stopped medications.
+          Exclude any drugs used to treat the reaction.
         </Text>
 
         {concomitant.map((c, idx) => (
           <View key={`con-${idx}`} style={styles.card}>
             <View style={styles.cardHeaderRow}>
               <Text style={styles.cardTitle}>Concomitant {idx + 1}</Text>
-              <Pressable
-                style={styles.smallBtn}
-                onPress={() => removeConcomitant(idx)}
-              >
-                <Text style={styles.smallBtnText}>Remove</Text>
-              </Pressable>
+              {concomitant.length > 1 && (
+                <Pressable
+                  style={styles.removeBtn}
+                  onPress={() => removeConcomitant(idx)}
+                >
+                  <Text style={styles.removeBtnText}>Remove</Text>
+                </Pressable>
+              )}
             </View>
 
-            {renderFieldLabel("Name")}
+            {renderFieldLabel("Name (Brand / Generic)")}
             <TextInput
               style={styles.input}
-              placeholder="Name"
+              placeholder="e.g. Diclofenac"
+              placeholderTextColor="#9ca0c0"
               value={c.name}
               onChangeText={(v) => updateConcomitant(idx, "name", v)}
             />
@@ -735,7 +602,8 @@ export default function MedicationDetailsScreen({ navigation }: any) {
             {renderFieldLabel("Dose")}
             <TextInput
               style={styles.input}
-              placeholder="Dose"
+              placeholder="e.g. 50 mg"
+              placeholderTextColor="#9ca0c0"
               value={c.dose}
               onChangeText={(v) => updateConcomitant(idx, "dose", v)}
             />
@@ -747,17 +615,18 @@ export default function MedicationDetailsScreen({ navigation }: any) {
                 onValueChange={(val) => updateConcomitant(idx, "route", val)}
                 style={styles.picker}
               >
-                <Picker.Item label="Select Route" value="" />
+                <Picker.Item label="Select route" value="" />
                 {ROUTE_OPTIONS.map((r) => (
                   <Picker.Item key={r} label={r} value={r} />
                 ))}
               </Picker>
             </View>
 
-            {renderFieldLabel("Frequency")}
+            {renderFieldLabel("Frequency (OD, BD, etc.)")}
             <TextInput
               style={styles.input}
               placeholder="Frequency"
+              placeholderTextColor="#9ca0c0"
               value={c.frequency}
               onChangeText={(v) => updateConcomitant(idx, "frequency", v)}
             />
@@ -766,16 +635,13 @@ export default function MedicationDetailsScreen({ navigation }: any) {
             <TouchableOpacity
               style={styles.input}
               onPress={() =>
-                openDatePicker(
-                  "concomitant",
-                  idx,
-                  "dateStarted",
-                  c.dateStarted
-                )
+                openDatePicker("concomitant", idx, "dateStarted", c.dateStarted)
               }
             >
-              <Text style={styles.inputText}>
-                {c.dateStarted || "Therapy Start Date"}
+              <Text
+                style={[styles.inputText, !c.dateStarted && styles.placeholder]}
+              >
+                {c.dateStarted || "Select start date"}
               </Text>
             </TouchableOpacity>
 
@@ -783,23 +649,22 @@ export default function MedicationDetailsScreen({ navigation }: any) {
             <TouchableOpacity
               style={styles.input}
               onPress={() =>
-                openDatePicker(
-                  "concomitant",
-                  idx,
-                  "dateStopped",
-                  c.dateStopped
-                )
+                openDatePicker("concomitant", idx, "dateStopped", c.dateStopped)
               }
             >
-              <Text style={styles.inputText}>
-                {c.dateStopped || "Therapy Stop Date"}
+              <Text
+                style={[styles.inputText, !c.dateStopped && styles.placeholder]}
+              >
+                {c.dateStopped || "Select stop date"}
               </Text>
             </TouchableOpacity>
 
             {renderFieldLabel("Indication / Reason")}
             <TextInput
-              style={styles.input}
-              placeholder="Indication / Reason"
+              style={[styles.input, styles.multiline]}
+              placeholder="Why this medicine was being taken"
+              placeholderTextColor="#9ca0c0"
+              multiline
               value={c.indication}
               onChangeText={(v) => updateConcomitant(idx, "indication", v)}
             />
@@ -807,24 +672,21 @@ export default function MedicationDetailsScreen({ navigation }: any) {
         ))}
 
         <Pressable style={styles.addButton} onPress={addConcomitant}>
-          <Text style={styles.addButtonText}>
-            + Add Concomitant Medication
-          </Text>
+          <Text style={styles.addButtonText}>+ Add Concomitant Medication</Text>
         </Pressable>
 
         <View style={styles.navRow}>
           <Pressable
-            style={[styles.navButton, { backgroundColor: "#ccc" }]}
+            style={[styles.navButton, styles.navButtonSecondary]}
             onPress={() => navigation.goBack()}
           >
-            <Text style={{ color: "#000" }}>Previous</Text>
+            <Text style={styles.navButtonSecondaryText}>Previous</Text>
           </Pressable>
-
           <Pressable
             style={styles.navButton}
             onPress={() => navigation.navigate("AMCUseOnly")}
           >
-            <Text style={{ color: "#fff" }}>Next</Text>
+            <Text style={styles.navButtonText}>Next</Text>
           </Pressable>
         </View>
 
@@ -838,36 +700,26 @@ export default function MedicationDetailsScreen({ navigation }: any) {
         )}
 
         <Modal
-          visible={!!aiWarning}
+          visible={!!warning}
           transparent
           animationType="fade"
-          onRequestClose={() => setAiWarning(null)}
+          onRequestClose={() => setWarning(null)}
         >
           <View style={styles.modalBackdrop}>
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>
-                {aiWarning?.warningTitle || "Mock condition warning"}
+                {warning?.warningTitle || "Clinical note"}
               </Text>
               <Text style={styles.modalMessage}>
-                {aiWarning?.warningMessage ||
-                  "This is only a prototype popup. No real medical advice is provided."}
+                {warning?.warningMessage ||
+                  "Reference information only. Always consult current prescribing guidelines."}
               </Text>
 
-              <View style={styles.conditionsBox}>
-                <Text style={styles.conditionsTitle}>Prototype rules:</Text>
-                <Text>- Pregnancy related caution / restriction (demo).</Text>
-                <Text>- Age based restriction for children / seniors (demo).</Text>
-                <Text>- Renal / liver function caution (demo).</Text>
-                <Text>- Allergy or hypersensitivity warning (demo).</Text>
-              </View>
-
               <Pressable
-                style={styles.navButton}
-                onPress={() => setAiWarning(null)}
+                style={styles.modalBtn}
+                onPress={() => setWarning(null)}
               >
-                <Text style={{ color: "#fff", textAlign: "center" }}>
-                  OK, understood
-                </Text>
+                <Text style={styles.modalBtnText}>Got it</Text>
               </Pressable>
             </View>
           </View>
@@ -878,184 +730,177 @@ export default function MedicationDetailsScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    paddingBottom: 60,
-  },
-  header: {
-    backgroundColor: "#B20000",
+  container: { padding: 16, paddingBottom: 60 },
+  sectionHeader: {
+    backgroundColor: "#414071",
     color: "#fff",
-    padding: 10,
-    borderRadius: 6,
-    marginBottom: 12,
-    fontWeight: "700",
-    textTransform: "uppercase",
+    padding: 12,
+    textAlign: "center",
+    fontWeight: "800",
+    fontSize: 16,
+    borderRadius: 10,
+    marginBottom: 8,
+    letterSpacing: 0.3,
+  },
+  subnote: {
+    color: "#5b5e80",
+    fontSize: 12,
+    marginBottom: 10,
+    paddingHorizontal: 4,
   },
   card: {
     backgroundColor: "#fff",
     padding: 14,
-    borderRadius: 10,
-    marginBottom: 16,
+    borderRadius: 12,
+    marginBottom: 14,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: "#e5e7f0",
   },
   cardHeaderRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 6,
   },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 8,
-    color: "#23264c",
-  },
-  smallBtn: {
+  cardTitle: { fontSize: 16, fontWeight: "700", color: "#1f2147" },
+  removeBtn: {
     paddingVertical: 6,
-    paddingHorizontal: 10,
-    backgroundColor: "#eee",
-    borderRadius: 8,
-    marginLeft: 8,
+    paddingHorizontal: 12,
+    backgroundColor: "#fdecec",
+    borderRadius: 16,
   },
-  smallBtnText: {
-    color: "#23264c",
-    fontWeight: "600",
-    fontSize: 12,
-  },
+  removeBtnText: { color: "#a73e3e", fontWeight: "600", fontSize: 12 },
   fieldHeader: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#4b5563",
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#1f2147",
     marginBottom: 4,
-    marginTop: 4,
+    marginTop: 8,
+    letterSpacing: 0.2,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#c9c9d9",
-    backgroundColor: "#fff",
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 10,
+    borderColor: "#dde0ec",
+    backgroundColor: "#fafbff",
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    color: "#23264c",
+    fontSize: 15,
   },
-  inputText: {
-    color: "#333",
-  },
+  multiline: { minHeight: 64, textAlignVertical: "top" },
+  inputText: { color: "#23264c", fontSize: 15 },
+  placeholder: { color: "#9ca0c0" },
   pickerWrapper: {
     borderWidth: 1,
-    borderColor: "#c9c9d9",
-    borderRadius: 8,
-    marginBottom: 10,
+    borderColor: "#dde0ec",
+    backgroundColor: "#fafbff",
+    borderRadius: 10,
     overflow: "hidden",
   },
-  picker: {
-    height: 48,
-    color: "#000",
+  picker: { height: 48, color: "#23264c" },
+  helperBtn: {
+    alignSelf: "flex-start",
+    backgroundColor: "#eef0ff",
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    marginTop: 8,
   },
+  helperBtnText: { color: "#414071", fontWeight: "600", fontSize: 13 },
+  aiDropdown: {
+    marginTop: 10,
+    backgroundColor: "#f5f7ff",
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#dee3ff",
+  },
+  aiTitle: { fontWeight: "700", color: "#1f2147", marginBottom: 2 },
+  aiHint: { color: "#6b6f8e", fontSize: 11, marginBottom: 6 },
+  aiItem: { paddingVertical: 6 },
+  aiText: { fontSize: 13, color: "#1f2147" },
   subHeader: {
     fontWeight: "700",
-    color: "#23264c",
-    marginTop: 10,
+    color: "#1f2147",
+    marginTop: 12,
     marginBottom: 6,
   },
-  chipContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginBottom: 10,
-  },
+  chipContainer: { flexDirection: "row", flexWrap: "wrap", marginBottom: 6 },
   chip: {
     borderWidth: 1,
-    borderColor: "#ccc",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 20,
+    borderColor: "#dde0ec",
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: 18,
     marginRight: 8,
     marginBottom: 8,
+    backgroundColor: "#fafbff",
   },
-  chipActive: {
-    backgroundColor: "#414071",
-    borderColor: "#414071",
-  },
-  chipText: {
-    color: "#23264c",
-  },
-  chipTextActive: {
-    color: "#fff",
-  },
+  chipActive: { backgroundColor: "#414071", borderColor: "#414071" },
+  chipText: { color: "#414071", fontWeight: "600", fontSize: 13 },
+  chipTextActive: { color: "#fff" },
   addButton: {
-    backgroundColor: "#414071",
-    padding: 14,
-    borderRadius: 30,
+    backgroundColor: "#eef0ff",
+    paddingVertical: 12,
+    borderRadius: 24,
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: "#dde0ec",
   },
-  addButtonText: {
-    color: "#fff",
-    fontWeight: "600",
-  },
+  addButtonText: { color: "#414071", fontWeight: "700" },
   navRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    marginTop: 4,
   },
   navButton: {
     backgroundColor: "#414071",
     paddingVertical: 12,
     paddingHorizontal: 32,
-    borderRadius: 24,
+    borderRadius: 26,
+    flex: 1,
+    marginHorizontal: 6,
+    alignItems: "center",
   },
-  aiDropdown: {
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 8,
-    padding: 8,
-    marginBottom: 10,
-    backgroundColor: "#f9fafb",
-  },
-  aiTitle: {
-    fontWeight: "600",
-    marginBottom: 4,
-    color: "#23264c",
-  },
-  aiItem: {
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ececec",
-  },
-  aiText: {
-    fontSize: 13,
-    color: "#111827",
+  navButtonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+  navButtonSecondary: { backgroundColor: "#eef0ff" },
+  navButtonSecondaryText: {
+    color: "#414071",
+    fontWeight: "700",
+    fontSize: 15,
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.35)",
+    backgroundColor: "rgba(0,0,0,0.45)",
     justifyContent: "center",
     alignItems: "center",
+    padding: 24,
   },
   modalContent: {
-    width: "85%",
+    width: "100%",
     backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 14,
+    padding: 18,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "800",
+    color: "#1f2147",
     marginBottom: 8,
   },
   modalMessage: {
     fontSize: 14,
-    marginBottom: 12,
-    color: "#111827",
+    color: "#23264c",
+    marginBottom: 14,
+    lineHeight: 20,
   },
-  conditionsBox: {
-    backgroundColor: "#f9fafb",
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 12,
+  modalBtn: {
+    backgroundColor: "#414071",
+    paddingVertical: 12,
+    borderRadius: 24,
+    alignItems: "center",
   },
-  conditionsTitle: {
-    fontWeight: "600",
-    marginBottom: 4,
-    color: "#111827",
-  },
+  modalBtnText: { color: "#fff", fontWeight: "700" },
 });

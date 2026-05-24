@@ -1,7 +1,32 @@
 import React from "react";
-import { View, Text, StyleSheet, TextInput, ScrollView, Pressable } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  ScrollView,
+  Pressable,
+} from "react-native";
 import BackgroundWrapper from "../components/BackgroundWrapper";
 import { useForm } from "../contexts/FormContext";
+
+const SERIOUSNESS_OPTIONS = [
+  "Death",
+  "Life threatening",
+  "Hospitalization (Initial / Prolonged)",
+  "Congenital anomaly",
+  "Disability",
+  "Other Medically important",
+];
+
+const OUTCOME_OPTIONS = [
+  "Recovered",
+  "Recovering",
+  "Not Recovered",
+  "Fatal",
+  "Recovered with sequelae",
+  "Unknown",
+];
 
 export default function AMCUseOnlyScreen({ navigation }: any) {
   const { form, setForm } = useForm();
@@ -10,129 +35,153 @@ export default function AMCUseOnlyScreen({ navigation }: any) {
     setForm((prev: any) => ({ ...prev, [key]: value }));
   };
 
-  const seriousnessList = [
-    "Death",
-    "Life threatening",
-    "Hospitalization-Initial/Prolonged",
-    "Congenital-anomaly",
-    "Disability",
-    "Other Medically important",
-  ];
+  const toggleSeriousness = (item: string) => {
+    const list: string[] = Array.isArray(form.seriousness)
+      ? [...form.seriousness]
+      : [];
+    const i = list.indexOf(item);
+    if (i >= 0) list.splice(i, 1);
+    else list.push(item);
+    updateField("seriousness", list);
+    // If a serious condition is selected, ensure "No" is cleared.
+    if (list.length > 0) updateField("seriousnessNo", false);
+  };
 
-  const outcomeList = [
-    "Recovered",
-    "Recovering",
-    "Not Recovered",
-    "Fatal",
-    "Recovered with sequelae",
-    "Unknown",
-  ];
+  const seriousnessSet: string[] = Array.isArray(form.seriousness)
+    ? form.seriousness
+    : [];
 
   return (
     <BackgroundWrapper>
-      <ScrollView style={{ padding: 16 }}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.sectionHeader}>For AMC / NCC Use Only</Text>
 
-        {/* --- SECTION HEADER --- */}
-        <Text style={styles.sectionHeader}>FOR AMC / NCC USE ONLY</Text>
-
-        {/* --- 12. Relevant investigations --- */}
+        {/* 12. Relevant investigations */}
         <View style={styles.block}>
-          <Text style={styles.label}>12. Relevant investigations with dates :</Text>
+          <Text style={styles.label}>
+            12. Relevant investigations with dates
+          </Text>
           <TextInput
             style={styles.textArea}
             multiline
-            value={form.investigations || ""}
-            onChangeText={(t) => updateField("investigations", t)}
-            placeholder="Enter investigations and dates"
+            value={form.relevantInvestigations || ""}
+            onChangeText={(t) => updateField("relevantInvestigations", t)}
+            placeholder="e.g. 12.01.2016: Alkaline Phosphatase = 180 U/L, ALT = 205 U/L"
+            placeholderTextColor="#9ca0c0"
+            textAlignVertical="top"
           />
         </View>
 
-        {/* --- 13. Medication history --- */}
+        {/* 13. Medication history */}
         <View style={styles.block}>
           <Text style={styles.label}>
-            13. Relevant medical / medication history (e.g. allergies, pregnancy, addiction, hepatic, renal dysfunction etc.)
+            13. Relevant medical / medication history
+          </Text>
+          <Text style={styles.hint}>
+            e.g. allergies, pregnancy, addiction, hepatic / renal dysfunction
           </Text>
           <TextInput
             style={styles.textArea}
             multiline
             value={form.medicalHistory || ""}
             onChangeText={(t) => updateField("medicalHistory", t)}
-            placeholder="Enter medical/medication history"
+            placeholder="Enter medical / medication history"
+            placeholderTextColor="#9ca0c0"
+            textAlignVertical="top"
           />
         </View>
 
-        {/* --- 14. Seriousness --- */}
+        {/* 14. Seriousness */}
         <View style={styles.block}>
-          <Text style={styles.label}>14. Seriousness of the reaction : </Text>
+          <Text style={styles.label}>14. Seriousness of the reaction</Text>
 
-          <View style={{ marginBottom: 10 }}>
-            <View style={styles.row}>
-              <Text style={styles.smallLabel}>No</Text>
-              <Pressable
+          <Pressable
+            style={styles.row}
+            onPress={() => {
+              const next = !form.seriousnessNo;
+              updateField("seriousnessNo", next);
+              if (next) updateField("seriousness", []);
+            }}
+          >
+            <View
+              style={[
+                styles.checkBox,
+                form.seriousnessNo === true && styles.checkBoxActive,
+              ]}
+            />
+            <Text style={styles.smallLabel}>No</Text>
+            <Text style={[styles.smallLabel, styles.muted]}>
+              {"   "}or tick any that apply:
+            </Text>
+          </Pressable>
+
+          {SERIOUSNESS_OPTIONS.map((item) => (
+            <Pressable
+              style={styles.row}
+              key={item}
+              onPress={() => toggleSeriousness(item)}
+            >
+              <View
                 style={[
                   styles.checkBox,
-                  form.seriousnessNo === true && styles.checkBoxActive,
+                  seriousnessSet.includes(item) && styles.checkBoxActive,
                 ]}
-                onPress={() => updateField("seriousnessNo", !form.seriousnessNo)}
-              />
-              <Text style={[styles.smallLabel, { marginLeft: 20 }]}>Yes (please tick anyone)</Text>
-            </View>
-          </View>
-
-          {seriousnessList.map((item) => (
-            <View style={styles.row} key={item}>
-              <Pressable
-                style={[
-                  styles.checkBox,
-                  form.seriousness?.includes(item) && styles.checkBoxActive,
-                ]}
-                onPress={() => {
-                  let list = form.seriousness || [];
-                  if (list.includes(item)) {
-                    list = list.filter((v: any) => v !== item);
-                  } else {
-                    list.push(item);
-                  }
-                  updateField("seriousness", list);
-                }}
               />
               <Text style={styles.smallLabel}>{item}</Text>
-            </View>
+            </Pressable>
           ))}
         </View>
 
-        {/* --- 15. Outcome --- */}
+        {/* 15. Outcome */}
         <View style={styles.block}>
-          <Text style={styles.label}>15. Outcome :</Text>
+          <Text style={styles.label}>15. Outcome</Text>
 
-          {outcomeList.map((item) => (
-            <View style={styles.row} key={item}>
-              <Pressable
+          {OUTCOME_OPTIONS.map((item) => (
+            <Pressable
+              style={styles.row}
+              key={item}
+              onPress={() => updateField("outcome", item)}
+            >
+              <View
                 style={[
                   styles.checkBox,
+                  styles.radio,
                   form.outcome === item && styles.checkBoxActive,
                 ]}
-                onPress={() => updateField("outcome", item)}
               />
               <Text style={styles.smallLabel}>{item}</Text>
-            </View>
+            </Pressable>
           ))}
         </View>
 
-        {/* --- NAV BUTTONS --- */}
+        {/* Additional Information */}
+        <View style={styles.block}>
+          <Text style={styles.label}>Additional Information</Text>
+          <TextInput
+            style={styles.textArea}
+            multiline
+            value={form.additionalInformation || ""}
+            onChangeText={(t) => updateField("additionalInformation", t)}
+            placeholder="Any other relevant details"
+            placeholderTextColor="#9ca0c0"
+            textAlignVertical="top"
+          />
+        </View>
+
+        {/* Navigation */}
         <View style={styles.navRow}>
           <Pressable
-            style={[styles.navButton, { backgroundColor: "#ccc" }]}
+            style={[styles.navButton, styles.navButtonSecondary]}
             onPress={() => navigation.goBack()}
           >
-            <Text style={{ color: "#000" }}>Previous</Text>
+            <Text style={styles.navButtonSecondaryText}>Previous</Text>
           </Pressable>
 
           <Pressable
             style={styles.navButton}
             onPress={() => navigation.navigate("ReporterDetails")}
           >
-            <Text style={{ color: "#fff" }}>Next</Text>
+            <Text style={styles.navButtonText}>Next</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -141,68 +190,88 @@ export default function AMCUseOnlyScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
+  container: { padding: 16, paddingBottom: 40 },
   sectionHeader: {
-    backgroundColor: "#660000",
+    backgroundColor: "#414071",
     color: "#fff",
-    padding: 10,
+    padding: 12,
     textAlign: "center",
     fontWeight: "800",
     fontSize: 16,
+    borderRadius: 10,
     marginBottom: 14,
+    letterSpacing: 0.3,
   },
   block: {
     backgroundColor: "#fff",
-    padding: 12,
-    borderRadius: 6,
+    padding: 14,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#d9d9d9",
-    marginBottom: 16,
+    borderColor: "#e5e7f0",
+    marginBottom: 14,
   },
   label: {
     fontWeight: "700",
-    color: "#000",
-    marginBottom: 8,
+    color: "#1f2147",
+    marginBottom: 6,
+    fontSize: 15,
   },
+  hint: { color: "#6b6f8e", fontSize: 12, marginBottom: 6 },
   textArea: {
-    height: 100,
+    minHeight: 92,
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 6,
-    backgroundColor: "#f9f9f9",
-    padding: 10,
-    textAlignVertical: "top",
+    borderColor: "#dde0ec",
+    borderRadius: 10,
+    backgroundColor: "#fafbff",
+    padding: 12,
+    color: "#1f2147",
+    fontSize: 14,
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 6,
+    marginVertical: 4,
   },
   smallLabel: {
     fontSize: 14,
-    color: "#000",
-    marginLeft: 8,
+    color: "#1f2147",
+    marginLeft: 10,
   },
+  muted: { color: "#6b6f8e", marginLeft: 4 },
   checkBox: {
     width: 22,
     height: 22,
-    borderWidth: 1,
-    borderColor: "#333",
-    marginRight: 8,
+    borderWidth: 1.5,
+    borderColor: "#9da1bf",
+    borderRadius: 4,
     backgroundColor: "#fff",
   },
+  radio: { borderRadius: 11 },
   checkBoxActive: {
-    backgroundColor: "#23264c",
+    backgroundColor: "#414071",
+    borderColor: "#414071",
   },
   navRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 20,
-    marginBottom: 40,
+    marginTop: 8,
   },
   navButton: {
     backgroundColor: "#414071",
     paddingVertical: 12,
     paddingHorizontal: 32,
-    borderRadius: 25,
+    borderRadius: 26,
+    flex: 1,
+    marginHorizontal: 6,
+    alignItems: "center",
+  },
+  navButtonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+  navButtonSecondary: {
+    backgroundColor: "#eef0ff",
+  },
+  navButtonSecondaryText: {
+    color: "#414071",
+    fontWeight: "700",
+    fontSize: 15,
   },
 });

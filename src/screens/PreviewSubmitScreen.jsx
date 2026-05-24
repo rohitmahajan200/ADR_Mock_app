@@ -8,24 +8,23 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
-  Linking,
-  Share,
 } from "react-native";
 import { useForm } from "../contexts/FormContext";
 import { useNavigation } from "@react-navigation/native";
 import FileViewer from "react-native-file-viewer";
-import RNFS from "react-native-fs";
 import Mailer from "react-native-mail";
+import { generateAdrPdf } from "../utils/generateAdrPdf";
 
 export default function PreviewSubmitScreen() {
   const { form } = useForm();
   const navigation = useNavigation();
 
   const [loading, setLoading] = useState(false);
-  const [pdfUri, setPdfUri] = useState(null);
+  const [pdfPath, setPdfPath] = useState(null);
+  const [publicPath, setPublicPath] = useState(null);
 
   const renderRow = (label, value) => {
-    if (!value) return null;
+    if (value === undefined || value === null || value === "") return null;
     return (
       <View style={styles.row}>
         <Text style={styles.rowLabel}>{label}</Text>
@@ -34,124 +33,67 @@ export default function PreviewSubmitScreen() {
     );
   };
 
-  // -----------------------------
-  // Copy bundled PDF from app assets into a readable location and open it
-  // -----------------------------
-  const generatePdf = async () => {
+  const handleGeneratePdf = async () => {
     try {
       setLoading(true);
+      const result = await generateAdrPdf(form);
+      setPdfPath(result.path);
+      setPublicPath(result.publicPath);
 
-      // Destination inside app's documents directory
-      const destPath = `${RNFS.CachesDirectoryPath}/adverse-event-report.pdf`;
-
-      await RNFS.copyFileAssets("adr_form.pdf", destPath);
-
-      await FileViewer.open(destPath);
-
-      if (Platform.OS === "android") {
-        // Android: try adr_form.pdf first, fallback to updated_adr_form.pdf
-        let copied = false;
-        const assetFiles = ["adr_form.pdf", "updated_adr_form.pdf"];
-        
-        for (const assetFile of assetFiles) {
-          try {
-            await RNFS.copyFileAssets(assetFile, destPath);
-            console.log(`PDF asset copied from ${assetFile}`);
-            copied = true;
-            break;
-          } catch (copyError) {
-            console.log(`Failed to copy ${assetFile}:`, copyError.message);
-            // Try next file
-          }
-        }
-        
-        if (!copied) {
-          throw new Error(
-            `Failed to copy PDF from assets. Tried: ${assetFiles.join(", ")}. ` +
-            `Make sure a PDF exists in android/app/src/main/assets/ and rebuild the app.`
-          );
-        }
-      } else {
-        // iOS: ensure ADR_Form.pdf is added to the app bundle resources
-        try {
-          await RNFS.copyFile(
-            `${RNFS.MainBundlePath}/ADR_Form.pdf`,
-            destPath
-          );
-        } catch (copyError) {
-          throw new Error(
-            `Failed to copy PDF from bundle: ${copyError.message}`
-          );
-        }
+      // Open the freshly saved PDF in the device's default viewer.
+      try {
+        await FileViewer.open(result.path, { showOpenWithDialog: true });
+      } catch (viewErr) {
+        // If no PDF viewer installed, still tell the user where the file is.
+        Alert.alert(
+          "PDF saved",
+          `Could not auto-open a PDF viewer.\n\nSaved to:\n${result.publicPath}`
+        );
       }
-
-      // Sanity check: copied file should not be empty
-      const stat = await RNFS.stat(destPath);
-      const fileSize = stat?.size ? Number(stat.size) : 0;
-      
-      if (!stat || fileSize < 1000) {
-        const errorMsg = `PDF copy failed or file is too small. 
-Size: ${fileSize} bytes
-Expected: > 1000 bytes
-Source asset: adr_form.pdf
-Destination: ${destPath}
-
-Please rebuild the app to ensure the PDF asset is bundled correctly.`;
-        throw new Error(errorMsg);
-      }
-      
-      console.log(`PDF copied successfully. Size: ${fileSize} bytes`);
-
-      const fileUri = `file://${publicPath}`;
-      setPdfUri(fileUri);
-      
-
-      // Show success message - user can manually open from Downloads
-      Alert.alert(
-        "PDF Generated Successfully! ✅",
-        `PDF has been saved successfully.\n\n` +
-        `📄 Size: ${(fileSize / 1024).toFixed(1)} KB\n\n` +
-        (Platform.OS === "android" 
-          ? `📁 Location: Downloads folder\n\n` +
-            `You can find it as:\nADR_Report_*.pdf\n\n` +
-            `Open it using any PDF viewer or file manager app.`
-          : `📁 Location: ${destPath}\n\n` +
-            `You can find it in your device's file manager.`
-        ),
-        [{ text: "OK" }]
-      );
     } catch (err) {
-      console.log("PDF Error:", err);
-      Alert.alert("Error", "Failed to generate PDF. " + err.message);
+      Alert.alert(
+        "Could not generate PDF",
+        err && err.message ? err.message : "Unknown error."
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  // -----------------------------
-  // Send Email With PDF
-  // -----------------------------
-  
-  const openMailWithAttachment = () => {
-    if (!pdfUri) {
-      Alert.alert("First generate PDF");
+  const handleEmail = () => {
+    if (!pdfPath) {
+      Alert.alert("Please generate the PDF first.");
       return;
     }
+    const initials = form.patientInitials || "ADR";
+    const subject = `ADR Report - ${initials}`;
+    const body =
+      `Please find attached the Suspected Adverse Drug Reaction Reporting Form.\n\n` +
+      `Patient: ${initials}\n` +
+      `Report date: ${form.reportDate || "(not set)"}\n` +
+      `Reporter: ${form.reporterNameAddress || "(not set)"}\n`;
 
     Mailer.mail(
       {
-        subject: "Testing Process",
-        recipients: ["mrdevrm@gmail.com"],
-        body: "Testing the mail body",
+        subject,
+        recipients: [],
+        body,
         isHTML: false,
         attachment: {
-          path: pdfUri.replace("file://", ""),
+          path: pdfPath.replace(/^file:\/\//, ""),
           type: "pdf",
-          name: "report.pdf",
+          name: `ADR_Report_${initials}.pdf`,
         },
       },
-      (err, event) => {
-        if (err) Alert.alert("Email Error", err);
+      (err) => {
+        if (err) {
+          Alert.alert(
+            "Email not available",
+            "No mail account is configured on this device. The PDF has still been saved to " +
+              (publicPath || "your device storage") +
+              "."
+          );
+        }
       }
     );
   };
@@ -159,6 +101,10 @@ Please rebuild the app to ensure the PDF asset is bundled correctly.`;
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.heading}>Preview & Submit</Text>
+      <Text style={styles.subheading}>
+        Review the entered details below. Tap Generate PDF to save the form to
+        your device and open it for preview.
+      </Text>
 
       {/* CASE TYPE */}
       <View style={styles.card}>
@@ -187,18 +133,18 @@ Please rebuild the app to ensure the PDF asset is bundled correctly.`;
         </View>
 
         {renderRow("Patient Initials", form.patientInitials)}
-        {renderRow("Age / DOB", form.patientAgeOrDob)}
+        {renderRow("Age / Date of Birth", form.patientAgeOrDob)}
         {renderRow("Gender", form.gender)}
         {renderRow("Weight (kg)", form.weightKg)}
-        {renderRow("Reg. No.", form.regNo)}
+        {renderRow("Reg. No. / IPD / OPD / CR No.", form.regNo)}
         {renderRow("AMC Report No.", form.amcReportNo)}
-        {renderRow("WW Unique No.", form.worldWideUniqueNo)}
+        {renderRow("Worldwide Unique No.", form.worldWideUniqueNo)}
       </View>
 
       {/* REACTION DETAILS */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <Text style={styles.sectionTitle}>B. Adverse Reaction</Text>
+          <Text style={styles.sectionTitle}>B. Suspected Adverse Reaction</Text>
           <Pressable
             style={styles.editBtn}
             onPress={() => navigation.navigate("ReactionDetails")}
@@ -207,13 +153,9 @@ Please rebuild the app to ensure the PDF asset is bundled correctly.`;
           </Pressable>
         </View>
 
-        {renderRow("Event Start Date", form.eventStartDate)}
-        {renderRow("Event Stop Date", form.eventStopDate)}
-        {renderRow("Reaction Management", form.reactionManagement)}
-        {renderRow("Relevant Investigations", form.relevantInvestigations)}
-        {renderRow("Medical History", form.medicalHistory)}
-        {renderRow("Seriousness", form.seriousness)}
-        {renderRow("Outcome", form.outcome)}
+        {renderRow("Event / Reaction Start Date", form.eventStartDate)}
+        {renderRow("Event / Reaction Stop Date", form.eventStopDate)}
+        {renderRow("Reaction Description", form.reactionManagement)}
       </View>
 
       {/* SUSPECTED MEDICATIONS */}
@@ -236,14 +178,41 @@ Please rebuild the app to ensure the PDF asset is bundled correctly.`;
           return (
             <View key={idx} style={styles.group}>
               <Text style={styles.medTitle}>Medication {idx}</Text>
-              {renderRow("Name", name)}
-              {renderRow("Manufacturer", form[`suspectedMedicationManufacturer${idx}`])}
-              {renderRow("Batch", form[`suspectedMedicationBatch${idx}`])}
+              {renderRow("Name (Brand / Generic)", name)}
+              {renderRow(
+                "Manufacturer",
+                form[`suspectedMedicationManufacturer${idx}`]
+              )}
+              {renderRow("Batch / Lot No.", form[`suspectedMedicationBatch${idx}`])}
+              {renderRow("Expiry Date", form[`suspectedMedicationExpiry${idx}`])}
               {renderRow("Dose", form[`suspectedMedicationDose${idx}`])}
               {renderRow("Route", form[`suspectedMedicationRoute${idx}`])}
               {renderRow("Frequency", form[`suspectedMedicationFrequency${idx}`])}
-              {renderRow("Start Date", form[`suspectedMedicationDateStarted${idx}`])}
-              {renderRow("Stop Date", form[`suspectedMedicationDateStopped${idx}`])}
+              {renderRow(
+                "Therapy Start Date",
+                form[`suspectedMedicationDateStarted${idx}`]
+              )}
+              {renderRow(
+                "Therapy Stop Date",
+                form[`suspectedMedicationDateStopped${idx}`]
+              )}
+              {renderRow(
+                "Indication",
+                form[`suspectedMedicationIndication${idx}`]
+              )}
+              {renderRow(
+                "Causality Assessment",
+                form[`suspectedMedicationCausality${idx}`]
+              )}
+              {renderRow("Action Taken", form[`actionTaken${idx}`])}
+              {renderRow(
+                "Reaction Reappeared after Reintroduction",
+                form[`reintroducedEffect${idx}`]
+              )}
+              {renderRow(
+                "Dose if Reintroduced",
+                form[`reintroducedDose${idx}`]
+              )}
             </View>
           );
         })}
@@ -269,15 +238,45 @@ Please rebuild the app to ensure the PDF asset is bundled correctly.`;
           return (
             <View key={idx} style={styles.group}>
               <Text style={styles.medTitle}>Concomitant {idx}</Text>
-              {renderRow("Name", name)}
+              {renderRow("Name (Brand / Generic)", name)}
               {renderRow("Dose", form[`concomitantDose${idx}`])}
               {renderRow("Route", form[`concomitantRoute${idx}`])}
               {renderRow("Frequency", form[`concomitantFrequency${idx}`])}
-              {renderRow("Start Date", form[`concomitantDateStarted${idx}`])}
-              {renderRow("Stop Date", form[`concomitantDateStopped${idx}`])}
+              {renderRow(
+                "Therapy Start Date",
+                form[`concomitantDateStarted${idx}`]
+              )}
+              {renderRow(
+                "Therapy Stop Date",
+                form[`concomitantDateStopped${idx}`]
+              )}
+              {renderRow("Indication", form[`concomitantIndication${idx}`])}
             </View>
           );
         })}
+      </View>
+
+      {/* AMC / NCC USE ONLY */}
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.sectionTitle}>For AMC / NCC Use Only</Text>
+          <Pressable
+            style={styles.editBtn}
+            onPress={() => navigation.navigate("AMCUseOnly")}
+          >
+            <Text style={styles.editBtnText}>Edit</Text>
+          </Pressable>
+        </View>
+
+        {renderRow("Relevant Investigations", form.relevantInvestigations)}
+        {renderRow("Medical / Medication History", form.medicalHistory)}
+        {renderRow(
+          "Seriousness",
+          Array.isArray(form.seriousness)
+            ? form.seriousness.join(", ")
+            : form.seriousness
+        )}
+        {renderRow("Outcome", form.outcome)}
       </View>
 
       {/* REPORTER */}
@@ -295,16 +294,32 @@ Please rebuild the app to ensure the PDF asset is bundled correctly.`;
         {renderRow("Name & Address", form.reporterNameAddress)}
         {renderRow("Pin", form.reporterPin)}
         {renderRow("Email", form.reporterEmail)}
-        {renderRow("Contact", form.reporterContact)}
+        {renderRow("Contact No.", form.reporterContact)}
         {renderRow("Occupation", form.reporterOccupation)}
-        {renderRow("Report Date", form.reportDate)}
+        {renderRow("Date of Report", form.reportDate)}
       </View>
+
+      {/* ADDITIONAL */}
+      {form.additionalInformation ? (
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Additional Information</Text>
+          {renderRow("Notes", form.additionalInformation)}
+        </View>
+      ) : null}
+
+      {pdfPath ? (
+        <View style={styles.savedBanner}>
+          <Text style={styles.savedBannerText}>
+            Saved to {publicPath}
+          </Text>
+        </View>
+      ) : null}
 
       {/* BUTTONS */}
       <View style={styles.buttonRow}>
         <Pressable
-          style={styles.primaryBtn}
-          onPress={generatePdf}
+          style={[styles.primaryBtn, loading && styles.disabledBtn]}
+          onPress={handleGeneratePdf}
           disabled={loading}
         >
           {loading ? (
@@ -315,11 +330,11 @@ Please rebuild the app to ensure the PDF asset is bundled correctly.`;
         </Pressable>
 
         <Pressable
-          style={[styles.primaryBtn, !pdfUri && styles.disabledBtn]}
-          disabled={!pdfUri}
-          onPress={openMailWithAttachment}
+          style={[styles.primaryBtn, !pdfPath && styles.disabledBtn]}
+          disabled={!pdfPath}
+          onPress={handleEmail}
         >
-          <Text style={styles.primaryBtnText}>Report (Email)</Text>
+          <Text style={styles.primaryBtnText}>Email Report</Text>
         </Pressable>
       </View>
 
@@ -329,58 +344,80 @@ Please rebuild the app to ensure the PDF asset is bundled correctly.`;
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16, backgroundColor: "#f2f2f7" },
+  container: { padding: 16, paddingBottom: 40 },
   heading: {
-    fontSize: 20,
-    fontWeight: "700",
+    fontSize: 22,
+    fontWeight: "800",
     textAlign: "center",
-    marginBottom: 14,
-    color: "#222",
+    marginBottom: 4,
+    color: "#1f2147",
+  },
+  subheading: {
+    textAlign: "center",
+    color: "#5b5e80",
+    marginBottom: 16,
+    fontSize: 13,
   },
   card: {
     backgroundColor: "#fff",
-    padding: 14,
-    borderRadius: 12,
+    padding: 16,
+    borderRadius: 14,
     marginBottom: 14,
+    borderWidth: 1,
+    borderColor: "#e5e7f0",
+    shadowColor: "#000",
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
     elevation: 1,
   },
   cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: 6,
   },
-  sectionTitle: { fontSize: 16, fontWeight: "700", color: "#23264c" },
+  sectionTitle: { fontSize: 16, fontWeight: "700", color: "#1f2147" },
   editBtn: {
     paddingVertical: 6,
-    paddingHorizontal: 10,
-    backgroundColor: "#efefef",
-    borderRadius: 8,
+    paddingHorizontal: 12,
+    backgroundColor: "#eef0ff",
+    borderRadius: 16,
   },
-  editBtnText: { color: "#23264c", fontWeight: "600" },
+  editBtnText: { color: "#414071", fontWeight: "600", fontSize: 12 },
   row: { marginBottom: 8 },
-  rowLabel: { fontSize: 13, color: "#6b6b7a" },
-  rowValue: { fontSize: 15, fontWeight: "600", color: "#222" },
+  rowLabel: { fontSize: 12, color: "#6b6f8e", marginBottom: 2 },
+  rowValue: { fontSize: 14, fontWeight: "600", color: "#23264c" },
   group: {
     marginTop: 10,
-    paddingTop: 8,
+    paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: "#eee",
+    borderTopColor: "#eef0f7",
   },
-  medTitle: { fontSize: 15, fontWeight: "700", marginBottom: 8 },
+  medTitle: { fontSize: 14, fontWeight: "700", marginBottom: 6, color: "#414071" },
+  savedBanner: {
+    backgroundColor: "#e8f5ec",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#bfe0c8",
+  },
+  savedBannerText: { color: "#15622f", fontSize: 13, fontWeight: "600" },
   buttonRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 12,
+    marginTop: 8,
   },
   primaryBtn: {
     backgroundColor: "#414071",
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 18,
-    borderRadius: 24,
+    borderRadius: 28,
     alignItems: "center",
     flex: 1,
     marginHorizontal: 6,
   },
   primaryBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
-  disabledBtn: { opacity: 0.6, backgroundColor: "#7a7a8c" },
+  disabledBtn: { opacity: 0.5, backgroundColor: "#9d9eb5" },
 });

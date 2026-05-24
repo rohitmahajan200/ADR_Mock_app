@@ -6,159 +6,251 @@ import {
   StyleSheet,
   Alert,
   Pressable,
+  ScrollView,
 } from "react-native";
-import Checkbox from "expo-checkbox";
 
 import { useForm } from "../contexts/FormContext";
-import BackgroundWrapper from "../components/BackgroundWrapper.js"
+import BackgroundWrapper from "../components/BackgroundWrapper.js";
 
-export default function PatientInfoScreen({ navigation }: any) {
-  const { form, setForm } = useForm();
-
-  const handleNext = () => {
-    if (!form.patientInitials?.trim() || !form.patientAgeOrDob?.trim() || !form.gender) {
-      Alert.alert("Please fill all required fields.");
-      return;
-    }
-    navigation.navigate("ReactionDetails");
-    // navigation.navigate("MedicineScreen");
-  };
-
-  const caseType: { label: string; value: "Initial" | "Follow-Up" }[] = [
+const CASE_TYPES: { label: string; value: "Initial" | "Follow-Up" }[] = [
   { label: "Initial", value: "Initial" },
   { label: "Follow-Up", value: "Follow-Up" },
 ];
 
-  const genders: { label: string; value: "M" | "F" | "Other" }[] = [
+const GENDERS: { label: string; value: "M" | "F" | "Other" }[] = [
   { label: "Male", value: "M" },
   { label: "Female", value: "F" },
   { label: "Other", value: "Other" },
 ];
 
+export default function PatientInfoScreen({ navigation }: any) {
+  const { form, setForm } = useForm();
+
+  const handleNext = () => {
+    if (
+      !form.patientInitials?.trim() ||
+      !form.patientAgeOrDob?.trim() ||
+      !form.gender
+    ) {
+      Alert.alert(
+        "Missing information",
+        "Please enter patient initials, age (or date of birth) and gender before continuing."
+      );
+      return;
+    }
+    navigation.navigate("ReactionDetails");
+  };
 
   return (
     <BackgroundWrapper>
-      <View style={styles.container}>
-       {caseType.map((g) => (
-  <Pressable
-    key={g.value}
-    style={styles.checkboxContainer}
-    onPress={() => {
-      // Radio button behavior: always set the selected value when clicked
-      setForm((f) => ({ ...f, caseType: g.value }));
-    }}
-  >
-    <View pointerEvents="none">
-      <Checkbox
-        value={form.caseType === g.value}
-        onValueChange={() => {}}
-      />
-    </View>
-    <Text style={styles.checkboxLabel}>{g.label}</Text>
-  </Pressable>
-))}
-        
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.sectionHeader}>A. Patient Information</Text>
 
-        {/* Patient Initials */}
-        <Text style={styles.label}>Patient Name Initials</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter patient initials"
-          value={form.patientInitials}
-          maxLength={2}
-          onChangeText={(v) => setForm((f) => ({ ...f, patientInitials: v }))}
-        />
+        {/* Case type */}
+        <View style={styles.card}>
+          <Text style={styles.label}>Case Type</Text>
+          <View style={styles.pillRow}>
+            {CASE_TYPES.map((g) => {
+              const selected = form.caseType === g.value;
+              return (
+                <Pressable
+                  key={g.value}
+                  style={[styles.pill, selected && styles.pillActive]}
+                  onPress={() => setForm((f) => ({ ...f, caseType: g.value }))}
+                >
+                  <Text
+                    style={[
+                      styles.pillText,
+                      selected && styles.pillTextActive,
+                    ]}
+                  >
+                    {g.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
 
-        {/* Age or DOB */}
-        <Text style={styles.label}>Age / DOB</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter Age or DOB"
-          value={form.patientAgeOrDob}
-          onChangeText={(v) => setForm((f) => ({ ...f, patientAgeOrDob: v }))}
-        />
+        {/* Identifiers */}
+        <View style={styles.card}>
+          <Text style={styles.label}>
+            Patient Initials <Text style={styles.req}>*</Text>
+          </Text>
+          <TextInput
+            style={styles.input}
+            placeholder="e.g. ML"
+            placeholderTextColor="#9ca0c0"
+            value={form.patientInitials}
+            maxLength={4}
+            autoCapitalize="characters"
+            onChangeText={(v) =>
+              setForm((f) => ({ ...f, patientInitials: v.toUpperCase() }))
+            }
+          />
 
-        {/* Weight */}
-        <Text style={styles.label}>Weight (kg)</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter weight"
-          value={form.weightKg}
-          onChangeText={(v) => setForm((f) => ({ ...f, weightKg: v }))}
-          keyboardType="numeric"
-        />
+          <Text style={styles.label}>
+            Age or Date of Birth <Text style={styles.req}>*</Text>
+          </Text>
+          <TextInput
+            style={styles.input}
+            placeholder="e.g. 65 or 12/04/1960"
+            placeholderTextColor="#9ca0c0"
+            value={form.patientAgeOrDob}
+            onChangeText={(v) =>
+              setForm((f) => ({ ...f, patientAgeOrDob: v }))
+            }
+          />
 
-            {genders.map((g) => (
-  <View style={styles.checkboxContainer} key={g.value}>
-    <Checkbox
-      value={form.gender === g.value}
-      onValueChange={() =>
-        setForm((f) => ({ ...f, gender: g.value }))
-      }
-    />
-    <Text style={styles.checkboxLabel}>{g.label}</Text>
-  </View>
-))}
+          <Text style={styles.label}>Weight (kg)</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="e.g. 72"
+            placeholderTextColor="#9ca0c0"
+            value={form.weightKg}
+            onChangeText={(v) => setForm((f) => ({ ...f, weightKg: v }))}
+            keyboardType="numeric"
+          />
+
+          <Text style={styles.label}>
+            Gender <Text style={styles.req}>*</Text>
+          </Text>
+          <View style={styles.pillRow}>
+            {GENDERS.map((g) => {
+              const selected = form.gender === g.value;
+              return (
+                <Pressable
+                  key={g.value}
+                  style={[styles.pill, selected && styles.pillActive]}
+                  onPress={() => setForm((f) => ({ ...f, gender: g.value }))}
+                >
+                  <Text
+                    style={[
+                      styles.pillText,
+                      selected && styles.pillTextActive,
+                    ]}
+                  >
+                    {g.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Reference numbers */}
+        <View style={styles.card}>
+          <Text style={styles.label}>Reg. No. / IPD / OPD / CR No.</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Hospital registration number"
+            placeholderTextColor="#9ca0c0"
+            value={form.regNo}
+            onChangeText={(v) => setForm((f) => ({ ...f, regNo: v }))}
+          />
+
+          <Text style={styles.label}>AMC Report No.</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="ADR Monitoring Centre report number"
+            placeholderTextColor="#9ca0c0"
+            value={form.amcReportNo}
+            onChangeText={(v) => setForm((f) => ({ ...f, amcReportNo: v }))}
+          />
+
+          <Text style={styles.label}>Worldwide Unique No.</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="If applicable"
+            placeholderTextColor="#9ca0c0"
+            value={form.worldWideUniqueNo}
+            onChangeText={(v) =>
+              setForm((f) => ({ ...f, worldWideUniqueNo: v }))
+            }
+          />
+        </View>
 
         <Pressable style={styles.button} onPress={handleNext}>
           <Text style={styles.buttonText}>Next</Text>
         </Pressable>
-      </View>
+      </ScrollView>
     </BackgroundWrapper>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: "transparent",
-    padding: 24,
-    justifyContent: "flex-start",
+    padding: 16,
+    paddingBottom: 40,
+  },
+  sectionHeader: {
+    backgroundColor: "#414071",
+    color: "#fff",
+    padding: 12,
+    textAlign: "center",
+    fontWeight: "800",
+    fontSize: 16,
+    borderRadius: 10,
+    marginBottom: 14,
+    letterSpacing: 0.3,
+  },
+  card: {
+    backgroundColor: "#fff",
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#e5e7f0",
+    marginBottom: 14,
   },
   label: {
-    marginTop: 14,
-    marginBottom: 7,
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#414071",
+    marginTop: 8,
+    marginBottom: 6,
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#1f2147",
   },
+  req: { color: "#c0392b" },
   input: {
     borderWidth: 1,
-    borderColor: "#bfc3d8",
-    backgroundColor: "#fff",
-    marginBottom: 12,
-    paddingVertical: 10,
+    borderColor: "#dde0ec",
+    backgroundColor: "#fafbff",
+    paddingVertical: 11,
     paddingHorizontal: 14,
-    borderRadius: 8,
+    borderRadius: 10,
     fontSize: 15,
     color: "#23264c",
   },
-  checkboxContainer: {
+  pillRow: {
     flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  checkboxLabel: {
-    marginLeft: 8,
-    fontSize: 15,
-    color: "#23264c",
-  },
-  genderContainer: {
-    flexDirection: "column",
+    flexWrap: "wrap",
     marginTop: 4,
-    marginBottom: 18,
   },
+  pill: {
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "#dde0ec",
+    backgroundColor: "#fafbff",
+    marginRight: 10,
+    marginBottom: 8,
+  },
+  pillActive: {
+    backgroundColor: "#414071",
+    borderColor: "#414071",
+  },
+  pillText: { color: "#414071", fontWeight: "600" },
+  pillTextActive: { color: "#fff", fontWeight: "700" },
   button: {
     backgroundColor: "#414071",
-    marginTop: 18,
+    marginTop: 12,
     paddingVertical: 14,
-    borderRadius: 24,
+    borderRadius: 28,
     alignItems: "center",
-    elevation: 1,
   },
   buttonText: {
     color: "#fff",
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "700",
   },
 });
