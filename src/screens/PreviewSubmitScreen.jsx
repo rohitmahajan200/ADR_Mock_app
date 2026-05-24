@@ -7,21 +7,16 @@ import {
   Pressable,
   ActivityIndicator,
   Alert,
-  Platform,
 } from "react-native";
 import { useForm } from "../contexts/FormContext";
 import { useNavigation } from "@react-navigation/native";
-import FileViewer from "react-native-file-viewer";
-import Mailer from "react-native-mail";
-import { generateAdrPdf } from "../utils/generateAdrPdf";
+import { openAdrPdf } from "../utils/openAdrPdf";
 
 export default function PreviewSubmitScreen() {
   const { form } = useForm();
   const navigation = useNavigation();
 
   const [loading, setLoading] = useState(false);
-  const [pdfPath, setPdfPath] = useState(null);
-  const [publicPath, setPublicPath] = useState(null);
 
   const renderRow = (label, value) => {
     if (value === undefined || value === null || value === "") return null;
@@ -33,77 +28,29 @@ export default function PreviewSubmitScreen() {
     );
   };
 
-  const handleGeneratePdf = async () => {
+  const handleOpenPdf = async () => {
     try {
       setLoading(true);
-      const result = await generateAdrPdf(form);
-      setPdfPath(result.path);
-      setPublicPath(result.publicPath);
-
-      // Open the freshly saved PDF in the device's default viewer.
-      try {
-        await FileViewer.open(result.path, { showOpenWithDialog: true });
-      } catch (viewErr) {
-        // If no PDF viewer installed, still tell the user where the file is.
-        Alert.alert(
-          "PDF saved",
-          `Could not auto-open a PDF viewer.\n\nSaved to:\n${result.publicPath}`
-        );
-      }
+      await openAdrPdf();
     } catch (err) {
       Alert.alert(
-        "Could not generate PDF",
-        err && err.message ? err.message : "Unknown error."
+        "Could not open the report",
+        err && err.message
+          ? err.message
+          : "No PDF viewer is installed on this device. Install one and try again."
       );
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEmail = () => {
-    if (!pdfPath) {
-      Alert.alert("Please generate the PDF first.");
-      return;
-    }
-    const initials = form.patientInitials || "ADR";
-    const subject = `ADR Report - ${initials}`;
-    const body =
-      `Please find attached the Suspected Adverse Drug Reaction Reporting Form.\n\n` +
-      `Patient: ${initials}\n` +
-      `Report date: ${form.reportDate || "(not set)"}\n` +
-      `Reporter: ${form.reporterNameAddress || "(not set)"}\n`;
-
-    Mailer.mail(
-      {
-        subject,
-        recipients: [],
-        body,
-        isHTML: false,
-        attachment: {
-          path: pdfPath.replace(/^file:\/\//, ""),
-          type: "pdf",
-          name: `ADR_Report_${initials}.pdf`,
-        },
-      },
-      (err) => {
-        if (err) {
-          Alert.alert(
-            "Email not available",
-            "No mail account is configured on this device. The PDF has still been saved to " +
-              (publicPath || "your device storage") +
-              "."
-          );
-        }
-      }
-    );
-  };
-
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.heading}>Preview & Submit</Text>
       <Text style={styles.subheading}>
-        Review the entered details below. Tap Generate PDF to save the form to
-        your device and open it for preview.
+        Review the entered details below. Tap Open Report to view the PDF —
+        you can pick any installed PDF app from the chooser to read or share
+        it.
       </Text>
 
       {/* CASE TYPE */}
@@ -307,34 +254,17 @@ export default function PreviewSubmitScreen() {
         </View>
       ) : null}
 
-      {pdfPath ? (
-        <View style={styles.savedBanner}>
-          <Text style={styles.savedBannerText}>
-            Saved to {publicPath}
-          </Text>
-        </View>
-      ) : null}
-
-      {/* BUTTONS */}
       <View style={styles.buttonRow}>
         <Pressable
-          style={[styles.primaryBtn, loading && styles.disabledBtn]}
-          onPress={handleGeneratePdf}
+          style={[styles.primaryBtnFull, loading && styles.disabledBtn]}
+          onPress={handleOpenPdf}
           disabled={loading}
         >
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.primaryBtnText}>Generate PDF</Text>
+            <Text style={styles.primaryBtnText}>Open Report</Text>
           )}
-        </Pressable>
-
-        <Pressable
-          style={[styles.primaryBtn, !pdfPath && styles.disabledBtn]}
-          disabled={!pdfPath}
-          onPress={handleEmail}
-        >
-          <Text style={styles.primaryBtnText}>Email Report</Text>
         </Pressable>
       </View>
 
@@ -395,28 +325,15 @@ const styles = StyleSheet.create({
     borderTopColor: "#eef0f7",
   },
   medTitle: { fontSize: 14, fontWeight: "700", marginBottom: 6, color: "#414071" },
-  savedBanner: {
-    backgroundColor: "#e8f5ec",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#bfe0c8",
-  },
-  savedBannerText: { color: "#15622f", fontSize: 13, fontWeight: "600" },
   buttonRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
     marginTop: 8,
   },
-  primaryBtn: {
+  primaryBtnFull: {
     backgroundColor: "#414071",
     paddingVertical: 14,
     paddingHorizontal: 18,
     borderRadius: 28,
     alignItems: "center",
-    flex: 1,
-    marginHorizontal: 6,
   },
   primaryBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
   disabledBtn: { opacity: 0.5, backgroundColor: "#9d9eb5" },
