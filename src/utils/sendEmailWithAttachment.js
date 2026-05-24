@@ -1,6 +1,6 @@
 import Mailer from "react-native-mail";
 
-export function sendEmailWithAttachment(pdfPath) {
+export function sendEmailWithAttachment(pdfUri) {
   Mailer.mail(
     {
       subject: "testing process",
@@ -8,7 +8,7 @@ export function sendEmailWithAttachment(pdfPath) {
       body: "testing the mail body",
       isHTML: false,
       attachment: {
-        path: pdfPath,
+        path: pdfUri.replace("file://", ""),
         type: "pdf",
         name: "report.pdf",
       },

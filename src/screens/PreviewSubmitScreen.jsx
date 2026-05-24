@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { useForm } from "../contexts/FormContext";
 import { useNavigation } from "@react-navigation/native";
-
+import FileViewer from "react-native-file-viewer";
 import RNFS from "react-native-fs";
 import Mailer from "react-native-mail";
 
@@ -42,7 +42,11 @@ export default function PreviewSubmitScreen() {
       setLoading(true);
 
       // Destination inside app's documents directory
-      const destPath = `${RNFS.DocumentDirectoryPath}/adverse-event-report.pdf`;
+      const destPath = `${RNFS.CachesDirectoryPath}/adverse-event-report.pdf`;
+
+      await RNFS.copyFileAssets("adr_form.pdf", destPath);
+
+      await FileViewer.open(destPath);
 
       if (Platform.OS === "android") {
         // Android: try adr_form.pdf first, fallback to updated_adr_form.pdf
@@ -98,18 +102,9 @@ Please rebuild the app to ensure the PDF asset is bundled correctly.`;
       
       console.log(`PDF copied successfully. Size: ${fileSize} bytes`);
 
-      // For Android, copy to Downloads folder so it's publicly accessible
-      let publicPath = destPath;
-      let downloadsPath = null;
-      if (Platform.OS === "android") {
-        downloadsPath = `${RNFS.DownloadDirectoryPath}/ADR_Report_${Date.now()}.pdf`;
-        await RNFS.copyFile(destPath, downloadsPath);
-        publicPath = downloadsPath;
-        console.log(`PDF also copied to Downloads: ${downloadsPath}`);
-      }
-
       const fileUri = `file://${publicPath}`;
       setPdfUri(fileUri);
+      
 
       // Show success message - user can manually open from Downloads
       Alert.alert(
@@ -136,6 +131,7 @@ Please rebuild the app to ensure the PDF asset is bundled correctly.`;
   // -----------------------------
   // Send Email With PDF
   // -----------------------------
+  
   const openMailWithAttachment = () => {
     if (!pdfUri) {
       Alert.alert("First generate PDF");

@@ -75,51 +75,140 @@ type MockSideEffect = {
   warningMessage?: string;
 };
 
+// const MOCK_SIDE_EFFECTS: Record<string, MockSideEffect[]> = {
+//   paracetamol: [
+//     {
+//       id: "p1",
+//       label: "May cause liver issues in high doses.",
+//       condition: "renal",
+//       warningTitle: "Liver / renal caution (prototype)",
+//       warningMessage:
+//         "Avoid high doses in liver or kidney issues. This is dummy prototype info only, not medical advice.",
+//     },
+//     {
+//       id: "p2",
+//       label: "Generally considered safe in pregnancy (mock).",
+//       condition: "pregnant",
+//       warningTitle: "Pregnancy notice (prototype)",
+//       warningMessage:
+//         "Always consult a doctor before any medicine in pregnancy. This is just demo behaviour.",
+//     },
+//   ],
+//   ibuprofen: [
+//     {
+//       id: "i1",
+//       label: "Avoid in late pregnancy (mock).",
+//       condition: "pregnant",
+//       warningTitle: "Pregnancy restriction (prototype)",
+//       warningMessage:
+//         "Non‑steroidal drugs may be avoided in late pregnancy. This is sample text only.",
+//     },
+//     {
+//       id: "i2",
+//       label: "Not recommended for children under 12 (mock).",
+//       condition: "child",
+//       warningTitle: "Age restriction (prototype)",
+//       warningMessage:
+//         "Use pediatric dosing and doctor consultation for children. Demo only, not real guidance.",
+//     },
+//   ],
+//   amoxicillin: [
+//     {
+//       id: "a1",
+//       label: "May cause allergic reactions (mock).",
+//       condition: "allergy",
+//       warningTitle: "Allergy risk (prototype)",
+//       warningMessage:
+//         "Watch for rash or breathing difficulty and seek help. This is mock behaviour only.",
+//     },
+//   ],
+// };
+
 const MOCK_SIDE_EFFECTS: Record<string, MockSideEffect[]> = {
   paracetamol: [
     {
       id: "p1",
       label: "May cause liver issues in high doses.",
       condition: "renal",
-      warningTitle: "Liver / renal caution (prototype)",
+      warningTitle: "Liver / renal caution",
       warningMessage:
-        "Avoid high doses in liver or kidney issues. This is dummy prototype info only, not medical advice.",
+        "Avoid high doses in liver or kidney issues.",
     },
     {
       id: "p2",
-      label: "Generally considered safe in pregnancy (mock).",
+      label: "Generally considered safe in pregnancy.",
       condition: "pregnant",
-      warningTitle: "Pregnancy notice (prototype)",
+      warningTitle: "Pregnancy notice",
       warningMessage:
-        "Always consult a doctor before any medicine in pregnancy. This is just demo behaviour.",
+        "Always consult a doctor before any medicine in pregnancy.",
     },
   ],
+
   ibuprofen: [
     {
       id: "i1",
-      label: "Avoid in late pregnancy (mock).",
+      label: "Avoid in late pregnancy.",
       condition: "pregnant",
-      warningTitle: "Pregnancy restriction (prototype)",
+      warningTitle: "Pregnancy restriction",
       warningMessage:
-        "Non‑steroidal drugs may be avoided in late pregnancy. This is sample text only.",
+        "NSAIDs may be avoided in late pregnancy.",
     },
     {
       id: "i2",
-      label: "Not recommended for children under 12 (mock).",
+      label: "Not recommended for children under 12.",
       condition: "child",
-      warningTitle: "Age restriction (prototype)",
+      warningTitle: "Age restriction",
       warningMessage:
-        "Use pediatric dosing and doctor consultation for children. Demo only, not real guidance.",
+        "Use pediatric dosing and doctor consultation for children.",
     },
   ],
+
   amoxicillin: [
     {
       id: "a1",
-      label: "May cause allergic reactions (mock).",
+      label: "May cause allergic reactions.",
       condition: "allergy",
-      warningTitle: "Allergy risk (prototype)",
+      warningTitle: "Allergy risk",
       warningMessage:
-        "Watch for rash or breathing difficulty and seek help. This is mock behaviour only.",
+        "Watch for rash or breathing difficulty and seek help.",
+    },
+  ],
+
+  chlorpromazine: [
+    {
+      id: "c1",
+      label: "May cause strong drowsiness.",
+      condition: "senior",
+      warningTitle: "Sedation warning",
+      warningMessage:
+        "Use cautiously in senior patients due to fall risk.",
+    },
+    {
+      id: "c2",
+      label: "May cause allergic reactions in some patients.",
+      condition: "allergy",
+      warningTitle: "Allergy caution",
+      warningMessage:
+        "Monitor for rash or swelling.",
+    },
+  ],
+
+  diclofenac: [
+    {
+      id: "d1",
+      label: "May affect kidney function (mock).",
+      condition: "renal",
+      warningTitle: "Renal caution (prototype)",
+      warningMessage:
+        "NSAIDs may impact kidneys. Prototype warning only.",
+    },
+    {
+      id: "d2",
+      label: "Use cautiously in seniors due to gastric sensitivity (mock).",
+      condition: "senior",
+      warningTitle: "Senior caution (prototype)",
+      warningMessage:
+        "Monitor stomach discomfort in older patients. Demo text only.",
     },
   ],
 };
