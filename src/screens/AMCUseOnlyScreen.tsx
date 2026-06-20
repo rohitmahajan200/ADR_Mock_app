@@ -36,15 +36,20 @@ export default function AMCUseOnlyScreen({ navigation }: any) {
   };
 
   const toggleSeriousness = (item: string) => {
-    const list: string[] = Array.isArray(form.seriousness)
-      ? [...form.seriousness]
-      : [];
-    const i = list.indexOf(item);
-    if (i >= 0) list.splice(i, 1);
-    else list.push(item);
-    updateField("seriousness", list);
-    // If a serious condition is selected, ensure "No" is cleared.
-    if (list.length > 0) updateField("seriousnessNo", false);
+    setForm((prev: any) => {
+      const current: string[] = Array.isArray(prev.seriousness)
+        ? prev.seriousness
+        : [];
+      const list = current.includes(item)
+        ? current.filter((x) => x !== item)
+        : [...current, item];
+      return {
+        ...prev,
+        seriousness: list,
+        // Selecting any serious condition clears the "No" tick.
+        seriousnessNo: list.length > 0 ? false : prev.seriousnessNo,
+      };
+    });
   };
 
   const seriousnessSet: string[] = Array.isArray(form.seriousness)
@@ -98,9 +103,15 @@ export default function AMCUseOnlyScreen({ navigation }: any) {
           <Pressable
             style={styles.row}
             onPress={() => {
-              const next = !form.seriousnessNo;
-              updateField("seriousnessNo", next);
-              if (next) updateField("seriousness", []);
+              setForm((prev: any) => {
+                const next = !prev.seriousnessNo;
+                return {
+                  ...prev,
+                  seriousnessNo: next,
+                  // Ticking "No" clears any selected serious conditions.
+                  seriousness: next ? [] : prev.seriousness,
+                };
+              });
             }}
           >
             <View

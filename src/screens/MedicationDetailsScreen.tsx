@@ -16,6 +16,7 @@ import { Picker } from "@react-native-picker/picker";
 import BackgroundWrapper from "../components/BackgroundWrapper";
 import { useForm } from "../contexts/FormContext";
 import { getMockSideEffects, SideEffect } from "../utils/mockAI";
+import { useAskAI } from "../components/AskAI";
 
 const ACTION_OPTIONS = [
   "Drug withdrawn",
@@ -77,6 +78,22 @@ type ConcomitantMed = {
 
 export default function MedicationDetailsScreen({ navigation }: any) {
   const { form, setForm } = useForm();
+  const { ask } = useAskAI();
+
+  const handleAskAi = (idx: number) => {
+    const med = medications[idx];
+    if (!med?.name?.trim()) {
+      Alert.alert(
+        "Enter a medicine name first",
+        "Type the medicine name in the Name field, then tap “Ask AI about this medicine”."
+      );
+      return;
+    }
+    ask(
+      `Tell me about ${med.name.trim()}: common and serious adverse reactions, ` +
+        `key contraindications, and what to watch for when reporting an ADR.`
+    );
+  };
 
   const buildInitialSuspected = (): SuspectedMed[] => {
     const arr: SuspectedMed[] = [];
@@ -354,14 +371,25 @@ export default function MedicationDetailsScreen({ navigation }: any) {
               onChangeText={(v) => updateSuspected(idx, "name", v)}
             />
 
-            <Pressable
-              style={styles.helperBtn}
-              onPress={() => handleAiCheck(idx)}
-            >
-              <Text style={styles.helperBtnText}>
-                Check known side effects
-              </Text>
-            </Pressable>
+            <View style={styles.helperRow}>
+              <Pressable
+                style={styles.helperBtn}
+                onPress={() => handleAiCheck(idx)}
+              >
+                <Text style={styles.helperBtnText}>
+                  Check known side effects
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={[styles.helperBtn, styles.askAiBtn]}
+                onPress={() => handleAskAi(idx)}
+              >
+                <Text style={[styles.helperBtnText, styles.askAiBtnText]}>
+                  💬 Ask AI about this medicine
+                </Text>
+              </Pressable>
+            </View>
 
             {aiResults && aiResults.medIdx === idx && (
               <View style={styles.aiDropdown}>
@@ -799,15 +827,23 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   picker: { height: 48, color: "#23264c" },
+  helperRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: 8,
+  },
   helperBtn: {
     alignSelf: "flex-start",
     backgroundColor: "#eef0ff",
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 16,
-    marginTop: 8,
+    marginRight: 8,
+    marginBottom: 4,
   },
   helperBtnText: { color: "#414071", fontWeight: "600", fontSize: 13 },
+  askAiBtn: { backgroundColor: "#414071" },
+  askAiBtnText: { color: "#fff" },
   aiDropdown: {
     marginTop: 10,
     backgroundColor: "#f5f7ff",

@@ -20,17 +20,12 @@ type FormData = {
   relevantInvestigations?: string;
   medicalHistory?: string;
 
-  // Seriousness (booleans and enum strings)
-  seriousness?: "No";
-  death?: boolean;
-  deathDate?: string;
-  lifeThreatening?: boolean;
-  hospitalization?: boolean;
-  congenitalAnomaly?: boolean;
-  disability?: boolean;
-  otherMedicallyImportant?: boolean;
+  // Section 14: Seriousness of the reaction.
+  // `seriousnessNo` is the "No" tick; `seriousness` holds the labels that apply.
+  seriousnessNo?: boolean;
+  seriousness?: string[];
 
-  // Outcome enum
+  // Section 15: Outcome enum
   outcome?: "Recovered" | "Recovering" | "Not Recovered" | "Fatal" | "Recovered with sequelae" | "Unknown";
 
   // Section C: Suspected Medications (4 rows)
@@ -161,14 +156,8 @@ const defaultFormData: FormData = {
   relevantInvestigations: '',
   medicalHistory: '',
 
-  seriousness: undefined,
-  death: false,
-  deathDate: '',
-  lifeThreatening: false,
-  hospitalization: false,
-  congenitalAnomaly: false,
-  disability: false,
-  otherMedicallyImportant: false,
+  seriousnessNo: false,
+  seriousness: [],
 
   outcome: undefined,
 

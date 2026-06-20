@@ -3,7 +3,7 @@ import { ImageBackground } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import { FormProvider } from './src/contexts/FormContext';
+import { FormProvider } from './src/contexts/FormContext.jsx';
 import PatientInfoScreen from './src/screens/PatientInfoScreen';
 import ReactionDetailsScreen from './src/screens/ReactionDetailsScreen';
 import MedicationDetailsScreen from './src/screens/MedicationDetailsScreen';
@@ -11,6 +11,7 @@ import AMCUseOnlyScreen from './src/screens/AMCUseOnlyScreen';
 import ReporterDetailsScreen from './src/screens/ReporterDetailsScreen';
 import PreviewSubmitScreen from './src/screens/PreviewSubmitScreen';
 import MedicineScreen from './src/screens/MedicineScreen';
+import { AskAIProvider } from './src/components/AskAI';
 
 const Stack = createNativeStackNavigator();
 
@@ -22,15 +23,16 @@ export default function App() {
         style={{ flex: 1 }}
         resizeMode="cover"
       >
-        <NavigationContainer>
-          <Stack.Navigator
+        <AskAIProvider>
+          <NavigationContainer>
+            <Stack.Navigator
             initialRouteName="PatientInfo"
             screenOptions={{
               contentStyle: { backgroundColor: 'transparent' },
               headerStyle: { backgroundColor: '#414071' },
               headerTintColor: '#ffffff',
               headerTitleStyle: { fontWeight: '700', fontSize: 16 },
-              headerBackTitleVisible: false,
+              headerBackButtonDisplayMode: 'minimal',
             }}
           >
             <Stack.Screen
@@ -68,8 +70,9 @@ export default function App() {
               component={MedicineScreen}
               options={{ title: 'Medicine Reference' }}
             />
-          </Stack.Navigator>
-        </NavigationContainer>
+            </Stack.Navigator>
+          </NavigationContainer>
+        </AskAIProvider>
       </ImageBackground>
     </FormProvider>
   );
