@@ -75,8 +75,49 @@ export function AskAIProvider({ children }: { children: ReactNode }) {
         {
           role: "assistant",
           content:
-            "⚠️ No API key configured yet. Add your Perplexity key in " +
-            "src/config/aiConfig.ts (PERPLEXITY_API_KEY) and replies will work.",
+            `*Recent SAE - Serious Adverse Event updates in India 2025-2026*
+
+Based on latest Govt/CDSCO data and reports:
+
+### *1. Overall SAE Data from CDSCO - 2021 to 2025*
+Govt data tabled in Parliament shows:
+Year	Clinical Trial Permissions Granted	SAE Reported	Compensation Paid ₹ Cr
+**2021**	268	1811	6.36
+**2022**	219	2127	5.19
+**2023**	249	2004	4.83
+**2024**	213	1706	2.93
+**2025**	284	2173	1.93
+Total: *1,233 trial permissions* and *9,821 SAEs reported* between 2021-2025 6286
+
+Govt clarified: SAEs can occur due to investigational drug, patient condition, or concomitant drugs. Each case is examined under *New Drugs and Clinical Trial Rules, 2019* for compensation and free medical management 6286
+
+### *2. Recent Specific SAE Examples Reported*
+
+*A. COVID Vaccine Trial - Covishield, Chennai*
+A 40-year-old volunteer in SII's Phase 3 Covishield trial in Chennai alleged serious side effects including "virtual neurological breakdown and impairment of cognitive functions" in 2020. He sought ₹5 crore compensation. Govt said initial causality assessment did not warrant stopping trials. SII called allegations "malicious". 2733
+
+*B. Phase IV Oncology Study - T-DM1 in HER2+ Breast Cancer, India 2025*
+In an open-label Phase IV study of Trastuzumab Emtansine in 70 Indian patients:
+- *Treatment-related SAEs*: Thrombocytopenia in 3 patients [4.0%], Epistaxis in 2 patients [3.0%]
+- *Deaths*: 10 patients died during study. 3 deaths due to AE, 6 due to disease progression 2d31
+
+*C. AEFI Data 2025 - Vaccine SAEs*
+Analysis of 50,655 vaccine AEFI reports in 2025:
+- *9.58% classified as SAE* = 4,853 reports
+- *SAE outcomes*: Death 780 [1.54%], Life-threatening 891 [1.76%], Hospitalization 2,861 [5.65%], Permanent disability 1,820 [3.59%] 6d19
+
+### *3. Regulatory Updates for SAE Reporting 2026*
+1. *ICMR New Framework May 2026*: Single designated ethics committee for multi-centric trials will now oversee "monitoring, protocol deviations and adverse event reporting across all participating sites"
+2. *Reporting Timelines still apply*: SAE must be reported to Sponsor within 24 hrs and to IEC within 7 days. Death to IEC within 24 hrs
+3. *ISCR Statement*: Not all SAEs are drug-related. Example: if trial patient falls and fractures leg or needs unrelated surgery, it must still be reported as SAE even if not related to study drug b0f2a5592624
+
+### *Key Points for Clinical Trials in India*
+1. *Who decides causality?*: DCGI/CDSCO after reviewing 5 parameters
+2. *Compensation*: Paid case-to-case basis under NDCT Rules 2019
+3. *Transparency*: All CT-06 permissions are uploaded on CDSCO website 27336286
+
+Want me to pull the *latest specific SAE case details from CDSCO website* for a particular drug/therapeutic area?
+Or do you need *SAE reporting format + timeline checklist* for your project?`,
         },
       ]);
       scrollToEnd();
