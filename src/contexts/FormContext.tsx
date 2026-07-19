@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { saveDraft, loadDraft, clearDraft } from '../services/storage';
 
 type FormData = {
   // Case Type (mutually exclusive)
@@ -259,14 +260,60 @@ const defaultFormData: FormData = {
 type FormContextType = {
   form: FormData;
   setForm: React.Dispatch<React.SetStateAction<FormData>>;
+  /** True once the persisted draft (if any) has been loaded from storage. */
+  hydrated: boolean;
+  /** Whether the current form has any user-entered content (an active draft). */
+  hasDraft: boolean;
+  /** Reset the form to defaults and clear the persisted draft (call on submit). */
+  resetForm: () => void;
 };
 
 const FormContext = createContext<FormContextType | undefined>(undefined);
 
+// A "draft" exists if the form differs from the pristine defaults.
+function isDirty(form: FormData): boolean {
+  return JSON.stringify(form) !== JSON.stringify(defaultFormData);
+}
+
 export const FormProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [form, setForm] = useState<FormData>(defaultFormData);
+  const [hydrated, setHydrated] = useState(false);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Load any saved draft once on mount.
+  useEffect(() => {
+    let active = true;
+    loadDraft<FormData>().then((saved) => {
+      if (active && saved) setForm({ ...defaultFormData, ...saved });
+      if (active) setHydrated(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Persist the draft (debounced) whenever it changes after hydration.
+  useEffect(() => {
+    if (!hydrated) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      if (isDirty(form)) saveDraft(form);
+      else clearDraft();
+    }, 500);
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
+  }, [form, hydrated]);
+
+  const resetForm = () => {
+    setForm(defaultFormData);
+    clearDraft();
+  };
+
   return (
-    <FormContext.Provider value={{ form, setForm }}>
+    <FormContext.Provider
+      value={{ form, setForm, hydrated, hasDraft: isDirty(form), resetForm }}
+    >
       {children}
     </FormContext.Provider>
   );

@@ -11,9 +11,10 @@ import {
 import { useForm } from "../contexts/FormContext";
 import { useNavigation } from "@react-navigation/native";
 import { openAdrPdf } from "../utils/openAdrPdf";
+import * as Notifications from "../services/NotificationService";
 
 export default function PreviewSubmitScreen() {
-  const { form } = useForm();
+  const { form, resetForm } = useForm();
   const navigation = useNavigation();
 
   const [loading, setLoading] = useState(false);
@@ -32,6 +33,12 @@ export default function PreviewSubmitScreen() {
     try {
       setLoading(true);
       await openAdrPdf();
+      // Opening the report is the de-facto "submit". Schedule an outcome
+      // follow-up reminder (if the outcome is still open), stop nagging about
+      // the now-completed draft, and start fresh next time.
+      await Notifications.scheduleFollowUp(form.outcome);
+      Notifications.cancelDraftReminder();
+      resetForm();
     } catch (err) {
       Alert.alert(
         "Could not open the report",

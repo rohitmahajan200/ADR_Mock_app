@@ -2,6 +2,11 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Required to display notifications on Android 13+ (API 33+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Lets Notifee re-arm scheduled (trigger) notifications after a device reboot -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
     <queries>
         <intent>
             <action android:name="android.intent.action.VIEW" />
