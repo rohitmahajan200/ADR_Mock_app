@@ -10,7 +10,9 @@ import notifee, {
   AndroidImportance,
   AuthorizationStatus,
   EventType,
+  IntervalTrigger,
   RepeatFrequency,
+  TimeUnit,
   TimestampTrigger,
   TriggerType,
 } from "@notifee/react-native";
@@ -34,11 +36,12 @@ export const NOTIF_IDS = {
   draftReminder: "draft-reminder",
   weeklyNudge: "weekly-nudge",
   weeklyTip: "weekly-tip",
+  hourlyNews: "hourly-news",
   onboarding: "onboarding",
 } as const;
 
 // Screens a notification tap can deep-link to. Kept in sync with the navigator.
-export type NotifScreen = "PatientInfo" | "MedicineScreen";
+export type NotifScreen = "PatientInfo" | "MedicineScreen" | "NotificationSettings";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -189,6 +192,31 @@ export async function ensureRecurring(force = false): Promise<void> {
     );
   } else {
     await notifee.cancelTriggerNotification(NOTIF_IDS.weeklyTip);
+  }
+
+  // Hourly drug-safety feed update (#6). Interval trigger, min 15 min on Android.
+  if (prefs.hourlyNews) {
+    const trigger: IntervalTrigger = {
+      type: TriggerType.INTERVAL,
+      interval: 1,
+      timeUnit: TimeUnit.HOURS,
+    };
+    await notifee.createTriggerNotification(
+      {
+        id: NOTIF_IDS.hourlyNews,
+        title: "New drug-safety updates",
+        body: "Fresh alerts, research and reported cases are ready to view.",
+        android: {
+          channelId: CHANNELS.tips,
+          pressAction: { id: "default" },
+          smallIcon: "ic_launcher",
+        },
+        data: { screen: "NotificationSettings" satisfies NotifScreen },
+      },
+      trigger,
+    );
+  } else {
+    await notifee.cancelTriggerNotification(NOTIF_IDS.hourlyNews);
   }
 
   if (!force) await setRecurringScheduled(true);

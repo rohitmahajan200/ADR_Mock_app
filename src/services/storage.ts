@@ -15,11 +15,13 @@ const KEYS = {
 export type NotificationPrefs = {
   weeklyNudge: boolean;
   safetyTips: boolean;
+  hourlyNews: boolean;
 };
 
 export const DEFAULT_PREFS: NotificationPrefs = {
   weeklyNudge: true,
   safetyTips: true,
+  hourlyNews: true,
 };
 
 async function readJson<T>(key: string, fallback: T): Promise<T> {
@@ -46,7 +48,11 @@ export const loadDraft = <T>(): Promise<T | null> =>
 export const clearDraft = () => AsyncStorage.removeItem(KEYS.draft).catch(() => {});
 
 // ---- Notification preferences ----
-export const loadPrefs = () => readJson<NotificationPrefs>(KEYS.prefs, DEFAULT_PREFS);
+export async function loadPrefs(): Promise<NotificationPrefs> {
+  // Merge over defaults so prefs saved before a new toggle existed stay valid.
+  const stored = await readJson<Partial<NotificationPrefs>>(KEYS.prefs, {});
+  return { ...DEFAULT_PREFS, ...stored };
+}
 export const savePrefs = (prefs: NotificationPrefs) => writeJson(KEYS.prefs, prefs);
 
 // ---- Scheduling flags ----

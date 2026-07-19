@@ -157,7 +157,7 @@ export default function App() {
             <Stack.Screen
               name="NotificationSettings"
               component={NotificationSettingsScreen}
-              options={{ title: 'Notifications' }}
+              options={{ title: 'Alerts & News' }}
             />
             </Stack.Navigator>
           </NavigationContainer>

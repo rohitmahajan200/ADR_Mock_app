@@ -1,4 +1,4 @@
-import notifee from '@notifee/react-native';
+import notifee, { TriggerType } from '@notifee/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   init,
@@ -57,31 +57,46 @@ describe('scheduleFollowUp — outcome gating', () => {
 });
 
 describe('ensureRecurring — respects opt-out prefs', () => {
-  it('schedules both when both prefs are on', async () => {
-    await savePrefs({ weeklyNudge: true, safetyTips: true });
+  it('schedules all three when every pref is on', async () => {
+    await savePrefs({ weeklyNudge: true, safetyTips: true, hourlyNews: true });
     await ensureRecurring(true);
     const ids = create.mock.calls.map((c) => c[0].id);
     expect(ids).toContain(NOTIF_IDS.weeklyNudge);
     expect(ids).toContain(NOTIF_IDS.weeklyTip);
+    expect(ids).toContain(NOTIF_IDS.hourlyNews);
     expect(cancel).not.toHaveBeenCalled();
   });
 
-  it('cancels a notification whose pref is off', async () => {
-    await savePrefs({ weeklyNudge: false, safetyTips: true });
+  it('cancels the notifications whose prefs are off', async () => {
+    await savePrefs({ weeklyNudge: false, safetyTips: true, hourlyNews: false });
     await ensureRecurring(true);
     const created = create.mock.calls.map((c) => c[0].id);
     expect(created).toContain(NOTIF_IDS.weeklyTip);
     expect(created).not.toContain(NOTIF_IDS.weeklyNudge);
+    expect(created).not.toContain(NOTIF_IDS.hourlyNews);
     expect(cancel).toHaveBeenCalledWith(NOTIF_IDS.weeklyNudge);
+    expect(cancel).toHaveBeenCalledWith(NOTIF_IDS.hourlyNews);
   });
 
   it('safety tip deep-links to the Medicine Reference screen', async () => {
-    await savePrefs({ weeklyNudge: false, safetyTips: true });
+    await savePrefs({ weeklyNudge: false, safetyTips: true, hourlyNews: false });
     await ensureRecurring(true);
     const tip = create.mock.calls.find((c) => c[0].id === NOTIF_IDS.weeklyTip);
     expect(tip[0].data.screen).toBe('MedicineScreen');
     expect(tip[0].title.length).toBeGreaterThan(0);
     expect(tip[0].body.length).toBeGreaterThan(0);
+  });
+
+  it('hourly update is an INTERVAL trigger that opens the news tab', async () => {
+    await savePrefs({ weeklyNudge: false, safetyTips: false, hourlyNews: true });
+    await ensureRecurring(true);
+    const hourly = create.mock.calls.find(
+      (c) => c[0].id === NOTIF_IDS.hourlyNews,
+    );
+    expect(hourly).toBeDefined();
+    expect(hourly[0].data.screen).toBe('NotificationSettings');
+    // Second arg is the trigger.
+    expect(hourly[1].type).toBe(TriggerType.INTERVAL);
   });
 });
 

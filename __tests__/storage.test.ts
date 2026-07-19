@@ -36,14 +36,32 @@ describe('storage: draft', () => {
 });
 
 describe('storage: prefs', () => {
-  it('defaults to both notifications on', async () => {
+  it('defaults to all notifications on', async () => {
     expect(await loadPrefs()).toEqual(DEFAULT_PREFS);
-    expect(DEFAULT_PREFS).toEqual({ weeklyNudge: true, safetyTips: true });
+    expect(DEFAULT_PREFS).toEqual({
+      weeklyNudge: true,
+      safetyTips: true,
+      hourlyNews: true,
+    });
   });
 
   it('persists updated prefs', async () => {
-    await savePrefs({ weeklyNudge: false, safetyTips: true });
-    expect(await loadPrefs()).toEqual({ weeklyNudge: false, safetyTips: true });
+    const next = { weeklyNudge: false, safetyTips: true, hourlyNews: false };
+    await savePrefs(next);
+    expect(await loadPrefs()).toEqual(next);
+  });
+
+  it('fills in missing keys from defaults (forward compatible)', async () => {
+    // Simulate prefs saved before a new toggle existed.
+    await AsyncStorage.setItem(
+      'adr:notificationPrefs',
+      JSON.stringify({ weeklyNudge: false }),
+    );
+    expect(await loadPrefs()).toEqual({
+      weeklyNudge: false,
+      safetyTips: true,
+      hourlyNews: true,
+    });
   });
 });
 
